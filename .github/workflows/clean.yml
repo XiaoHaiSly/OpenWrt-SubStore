@@ -11,6 +11,11 @@ on:
         required: true
         type: boolean
         default: true
+      purge_all:
+        description: '打勾以彻底清空（不保留最新 3 个 Release/Tag）'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   actions: write
@@ -56,10 +61,13 @@ jobs:
               }
             }
 
-      - name: 删除 Releases 和 Tags（保留最新 3 个）
+      - name: 删除 Releases 和 Tags
         uses: actions/github-script@v7
         with:
           script: |
+            // 判断是否勾选了彻底清空选项
+            const isPurgeAll = context.payload.inputs?.purge_all === 'true' || context.payload.inputs?.purge_all === true;
+
             const releases = await github.paginate(
               github.rest.repos.listReleases,
               {
@@ -71,10 +79,14 @@ jobs:
 
             console.log(`总共发现 ${releases.length} 个 Release`);
 
-            // 截取数组，跳过最新的前 3 个，剩余的放入待删除列表
-            const releasesToDelete = releases.slice(3);
+            // 如果勾选彻底清空，删除全部；否则跳过最新的前 3 个
+            const releasesToDelete = isPurgeAll ? releases : releases.slice(3);
             
-            console.log(`将保留最新 3 个，准备删除其余 ${releasesToDelete.length} 个 Release`);
+            if (isPurgeAll) {
+              console.log(`已勾选【彻底清空】，准备删除全部 ${releasesToDelete.length} 个 Release`);
+            } else {
+              console.log(`将保留最新 3 个，准备删除其余 ${releasesToDelete.length} 个 Release`);
+            }
 
             for (const release of releasesToDelete) {
               try {

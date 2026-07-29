@@ -2,8 +2,8 @@
 set -e
 
 SOURCE="$1"
-if [ "$SOURCE" != "proxy" ] && [ "$SOURCE" != "mirror" ] && [ "$SOURCE" != "official" ]; then
-	echo "FAIL: 参数必须是 proxy、mirror 或 official（实际收到: $SOURCE）" >&2
+if [ "$SOURCE" != "proxy" ] && [ "$SOURCE" != "official" ]; then
+	echo "FAIL: 参数必须是 proxy 或 official（实际收到: $SOURCE）" >&2
 	exit 1
 fi
 
@@ -19,8 +19,6 @@ DIST_NEW_PATH=/www/sub-store/dist.new
 PROXY_PREFIX="https://gh.445568.xyz/"
 OFFICIAL_URL="https://github.com/sub-store-org/Sub-Store-Front-End/releases/latest/download/dist.zip"
 PROXY_URL="$PROXY_PREFIX$OFFICIAL_URL"
-MIRROR_URL="https://substore-openwrt.445568.xyz/assets/dist.zip"
-MIRROR_VERSION_URL="https://substore-openwrt.445568.xyz/assets/frontend-version.txt"
 GITHUB_API_URL="https://api.github.com/repos/sub-store-org/Sub-Store-Front-End/releases/latest"
 PROXY_API_URL="$PROXY_PREFIX$GITHUB_API_URL"
 VERSION_FILE="/usr/libexec/substore/frontend.version"
@@ -32,7 +30,6 @@ fi
 
 case "$SOURCE" in
 	proxy) URL="$PROXY_URL" ;;
-	mirror) URL="$MIRROR_URL" ;;
 	official) URL="$OFFICIAL_URL" ;;
 esac
 
@@ -116,17 +113,6 @@ async function fromProxyApi() {
   }
 }
 
-async function fromMirror() {
-  try {
-    const res = await fetch('$MIRROR_VERSION_URL', { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const text = (await res.text()).trim();
-    return looksLikeVersionTag(text) ? text : null;
-  } catch (e) {
-    return null;
-  }
-}
-
 async function fromDirectApi() {
   try {
     const res = await fetch('$GITHUB_API_URL', { signal: AbortSignal.timeout(8000) });
@@ -140,9 +126,8 @@ async function fromDirectApi() {
 }
 
 var ORDER = {
-  proxy:    [fromProxyApi, fromMirror, fromDirectApi],
-  mirror:   [fromMirror, fromProxyApi, fromDirectApi],
-  official: [fromDirectApi, fromProxyApi, fromMirror]
+  proxy:    [fromProxyApi, fromDirectApi],
+  official: [fromDirectApi, fromProxyApi]
 };
 
 (async () => {

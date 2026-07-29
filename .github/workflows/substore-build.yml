@@ -2,36 +2,46 @@ name: luci-app-substore-build
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "统一版本号（由 release-pipeline 传入，留空则自动生成）"
-        required: false
-        type: string
-      backend_tag:
-        description: "Sub-Store 后端版本号（由 release-pipeline 传入，留空则构建时自行查询）"
-        required: false
-        type: string
-      frontend_tag:
-        description: "Sub-Store 前端版本号（由 release-pipeline 传入，留空则构建时自行查询）"
-        required: false
-        type: string
+
+permissions:
+  contents: write
 
 jobs:
   prepare:
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.ver.outputs.version }}
+      pkg_version: ${{ steps.ver.outputs.pkg_version }}
+      pkg_release: ${{ steps.ver.outputs.pkg_release }}
+      backend_tag: ${{ steps.upstream.outputs.backend_tag }}
+      frontend_tag: ${{ steps.upstream.outputs.frontend_tag }}
     steps:
+      - name: Query upstream Sub-Store versions
+        id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BACKEND_TAG=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/sub-store-org/Sub-Store/releases/latest | jq -r .tag_name)
+          FRONTEND_TAG=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/sub-store-org/Sub-Store-Front-End/releases/latest | jq -r .tag_name)
+          echo "backend_tag=$BACKEND_TAG" >> "$GITHUB_OUTPUT"
+          echo "frontend_tag=$FRONTEND_TAG" >> "$GITHUB_OUTPUT"
+          echo "后端上游最新: $BACKEND_TAG"
+          echo "前端上游最新: $FRONTEND_TAG"
+
       - name: Resolve version
         id: ver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION="2.9.${{ github.run_number }}"
-          fi
+          DATE="$(date -u +%Y.%m.%d)"
+          COUNT=$(gh release list --repo "${{ github.repository }}" --limit 200 --json tagName \
+            --jq "[.[] | select(.tagName | startswith(\"v${DATE}-r\"))] | length")
+          R=$((COUNT + 1))
+          VERSION="${DATE}-r${R}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "本次构建版本号: $VERSION"
+          echo "pkg_version=$DATE" >> "$GITHUB_OUTPUT"
+          echo "pkg_release=$R" >> "$GITHUB_OUTPUT"
+          echo "本次构建版本号: $VERSION（当天第 $R 次构建）"
 
   build-ipk:
     needs: prepare
@@ -45,9 +55,10 @@ jobs:
       - name: Set package version
         run: |
           if [ -f src/luci-app-substore/Makefile ]; then
-            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.version }}/g" src/luci-app-substore/Makefile
-            echo "Successfully updated PKG_VERSION to: ${{ needs.prepare.outputs.version }}"
-            grep "PKG_VERSION:=" src/luci-app-substore/Makefile
+            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.pkg_version }}/g" src/luci-app-substore/Makefile
+            sed -i "s/PKG_RELEASE:=.*/PKG_RELEASE:=${{ needs.prepare.outputs.pkg_release }}/g" src/luci-app-substore/Makefile
+            echo "Successfully updated PKG_VERSION/PKG_RELEASE"
+            grep -E "PKG_VERSION:=|PKG_RELEASE:=" src/luci-app-substore/Makefile
           else
             echo "Warning: Makefile not found in src/ directory!"
             exit 1
@@ -82,8 +93,8 @@ jobs:
           cd openwrt-sdk
           make defconfig
           if ! make package/luci-app-substore/compile V=s \
-              SUBSTORE_BACKEND_TAG="${{ inputs.backend_tag }}" \
-              SUBSTORE_FRONTEND_TAG="${{ inputs.frontend_tag }}" \
+              SUBSTORE_BACKEND_TAG="${{ needs.prepare.outputs.backend_tag }}" \
+              SUBSTORE_FRONTEND_TAG="${{ needs.prepare.outputs.frontend_tag }}" \
               > build.log 2>&1; then
             echo "=== 编译失败，日志最后 150 行 ==="
             tail -150 build.log
@@ -115,9 +126,10 @@ jobs:
       - name: Set package version
         run: |
           if [ -f src/luci-app-substore/Makefile ]; then
-            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.version }}/g" src/luci-app-substore/Makefile
-            echo "Successfully updated PKG_VERSION to: ${{ needs.prepare.outputs.version }}"
-            grep "PKG_VERSION:=" src/luci-app-substore/Makefile
+            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.pkg_version }}/g" src/luci-app-substore/Makefile
+            sed -i "s/PKG_RELEASE:=.*/PKG_RELEASE:=${{ needs.prepare.outputs.pkg_release }}/g" src/luci-app-substore/Makefile
+            echo "Successfully updated PKG_VERSION/PKG_RELEASE"
+            grep -E "PKG_VERSION:=|PKG_RELEASE:=" src/luci-app-substore/Makefile
           else
             echo "Warning: Makefile not found in src/ directory!"
             exit 1
@@ -151,8 +163,8 @@ jobs:
           cd openwrt-sdk
           make defconfig
           if ! make package/luci-app-substore/compile V=s \
-              SUBSTORE_BACKEND_TAG="${{ inputs.backend_tag }}" \
-              SUBSTORE_FRONTEND_TAG="${{ inputs.frontend_tag }}" \
+              SUBSTORE_BACKEND_TAG="${{ needs.prepare.outputs.backend_tag }}" \
+              SUBSTORE_FRONTEND_TAG="${{ needs.prepare.outputs.frontend_tag }}" \
               > build.log 2>&1; then
             echo "=== 编译失败，日志最后 150 行 ==="
             tail -150 build.log
@@ -164,6 +176,13 @@ jobs:
         run: |
           mkdir -p output
           find openwrt-sdk/bin -name "luci-app-substore*.apk" -exec cp {} output/ \;
+          for f in output/*.apk; do
+            base="$(basename "$f" .apk)"
+            case "$base" in
+              *_all) ;;
+              *) mv "$f" "output/${base}_all.apk" ;;
+            esac
+          done
           ls -lh output/
 
       - name: Upload artifact
@@ -191,13 +210,55 @@ jobs:
       - name: List files
         run: ls -lh output/
 
+      - name: Compose release notes
+        id: notes
+        run: |
+          BACKEND_TAG="${{ needs.prepare.outputs.backend_tag }}"
+          FRONTEND_TAG="${{ needs.prepare.outputs.frontend_tag }}"
+          [ -n "$BACKEND_TAG" ] || BACKEND_TAG="(查询失败)"
+          [ -n "$FRONTEND_TAG" ] || FRONTEND_TAG="(查询失败)"
+          {
+            echo "body<<EOF"
+            echo "**本次更新到的 Sub-Store 上游版本**"
+            echo "- 后端 (Sub-Store): \`$BACKEND_TAG\`"
+            echo "- 前端 (Sub-Store-Front-End): \`$FRONTEND_TAG\`"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           name: luci-app-substore v${{ needs.prepare.outputs.version }}
+          body: ${{ steps.notes.outputs.body }}
           files: |
             output/*.ipk
             output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sync-makefile:
+    needs: [prepare, release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Makefile version
+        run: |
+          sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.pkg_version }}/" luci-app-substore/Makefile
+          sed -i "s/PKG_RELEASE:=.*/PKG_RELEASE:=${{ needs.prepare.outputs.pkg_release }}/" luci-app-substore/Makefile
+          grep -E "PKG_VERSION:=|PKG_RELEASE:=" luci-app-substore/Makefile
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add luci-app-substore/Makefile
+          if git diff --cached --quiet; then
+            echo "Makefile 版本号没有变化，跳过提交"
+          else
+            git commit -m "chore: sync Makefile version to ${{ needs.prepare.outputs.version }}"
+            git pull --rebase
+            git push
+          fi

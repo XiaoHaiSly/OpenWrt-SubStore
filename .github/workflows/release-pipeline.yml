@@ -50,29 +50,14 @@ jobs:
           echo "backend_latest=$BACKEND_LATEST" >> $GITHUB_OUTPUT
           echo "frontend_latest=$FRONTEND_LATEST" >> $GITHUB_OUTPUT
 
-      - name: Resolve shared version
-        if: steps.check.outputs.changed == 'true'
-        id: ver
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          LAST_DEPLOY_RUN=$(gh run list --workflow=pages-deploy.yml --limit 1 --json number --jq '.[0].number // 0')
-          NEXT=$((LAST_DEPLOY_RUN + 1))
-          VERSION="2.9.$NEXT"
-          echo "本次统一版本号: $VERSION（跟着下一次 pages-deploy.yml 的运行序号走）"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Trigger build (apk + ipk)
+      - name: Trigger build (apk + ipk, 全自动)
         if: steps.check.outputs.changed == 'true'
         id: trigger_build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SINCE=$(date -u -d '-30 seconds' +%Y-%m-%dT%H:%M:%SZ)
-          gh workflow run substore-build.yml \
-            -f version="${{ steps.ver.outputs.version }}" \
-            -f backend_tag="${{ steps.check.outputs.backend_latest }}" \
-            -f frontend_tag="${{ steps.check.outputs.frontend_latest }}"
+          gh workflow run substore-build.yml
 
           run_id=""
           for i in $(seq 1 24); do
@@ -111,7 +96,8 @@ jobs:
           if git diff --cached --quiet; then
             echo "版本号没有变化，跳过提交（强制模式下属于正常情况)"
           else
-            git commit -m "chore: bump cached Sub-Store versions (backend ${{ steps.check.outputs.backend_latest }}, frontend ${{ steps.check.outputs.frontend_latest }}), release v${{ steps.ver.outputs.version }}"
+            git commit -m "chore: bump cached Sub-Store versions (backend ${{ steps.check.outputs.backend_latest }}, frontend ${{ steps.check.outputs.frontend_latest }})"
+            git pull --rebase
             git push
           fi
 

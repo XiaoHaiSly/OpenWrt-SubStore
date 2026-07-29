@@ -248,7 +248,9 @@ jobs:
         run: |
           sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.pkg_version }}/" luci-app-substore/Makefile
           sed -i "s/PKG_RELEASE:=.*/PKG_RELEASE:=${{ needs.prepare.outputs.pkg_release }}/" luci-app-substore/Makefile
-          grep -E "PKG_VERSION:=|PKG_RELEASE:=" luci-app-substore/Makefile
+          sed -i "s/SUBSTORE_BACKEND_TAG:=.*/SUBSTORE_BACKEND_TAG:=${{ needs.prepare.outputs.backend_tag }}/" luci-app-substore/Makefile
+          sed -i "s/SUBSTORE_FRONTEND_TAG:=.*/SUBSTORE_FRONTEND_TAG:=${{ needs.prepare.outputs.frontend_tag }}/" luci-app-substore/Makefile
+          grep -E "PKG_VERSION:=|PKG_RELEASE:=|SUBSTORE_BACKEND_TAG:=|SUBSTORE_FRONTEND_TAG:=" luci-app-substore/Makefile
 
       - name: Commit and push
         run: |
@@ -258,7 +260,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Makefile 版本号没有变化，跳过提交"
           else
-            git commit -m "chore: sync Makefile version to ${{ needs.prepare.outputs.version }}"
+            git commit -m "chore: sync Makefile version to ${{ needs.prepare.outputs.version }} (backend ${{ needs.prepare.outputs.backend_tag }}, frontend ${{ needs.prepare.outputs.frontend_tag }})"
             git pull --rebase
             git push
           fi

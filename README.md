@@ -31,7 +31,7 @@
 
 - 📦 **零配置安装**：装完包默认自带可用配置，开箱即用
 - 🖥 **图形化管理**：启动/停止、重启、查看运行状态、查看后端/前端版本，全部在 LuCI 网页里点按钮完成
-- 🔄 **一键更新**：后端 / 前端可分别单独更新，自动依次尝试「加速代理 → 自建镜像 → GitHub 官方源」，哪个通用哪个，不用手动判断网络环境
+- 🔄 **一键更新**：后端 / 前端可分别单独更新，自动依次尝试「加速代理 → GitHub 官方源」，哪个通用哪个，不用手动判断网络环境
 - ⏰ **定时任务**：订阅同步、数据备份、数据恢复、订阅预处理均支持 cron 定时
 - 💾 **数据恢复**：支持路由器重启/重装后从 Gist 等远程地址自动拉取数据恢复
 - 🌍 **多架构支持**：LuCI 部分为纯 Lua/JS（`arch:all`），后端依赖 Node.js，跟随 OpenWrt 官方 `node` 软件包支持的架构范围
@@ -136,7 +136,7 @@ make menuconfig   # LuCI -> Applications -> luci-app-substore 打勾
 make package/luci-app-substore/compile V=s
 ```
 
-构建过程会联网下载 Sub-Store 官方 Release 的后端 bundle 和前端 dist，请确保编译环境能访问 GitHub（或者自行把 `Makefile` 里的 `SUBSTORE_MIRROR_*_URL` 改成你自己的可用镜像地址）。
+构建过程会联网下载 Sub-Store 官方 Release 的后端 bundle 和前端 dist，请确保编译环境能访问 GitHub（或者自行把 `scripts/download-assets.sh` 里的 `SUBSTORE_MIRROR_*_URL` 改成你自己的可用镜像地址）。
 
 ---
 

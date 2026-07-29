@@ -66,9 +66,9 @@ wget -O - https://github.com/XiaoHaiSly/OpenWrt-SubStore/raw/refs/heads/main/scr
 **OpenWrt 24.10 及更早（opkg）：**
 
 ```sh
-wget -O /tmp/substore-ipk.pub https://substore-openwrt.445568.xyz/substore-ipk.pub
+wget -O /tmp/substore-ipk.pub https://substore-openwrt.pages.dev/substore-ipk.pub
 opkg-key add /tmp/substore-ipk.pub
-echo "src/gz substore https://substore-openwrt.445568.xyz/openwrt-24.10/all" > /etc/opkg/substore.conf
+echo "src/gz substore https://substore-openwrt.pages.dev/openwrt-24.10/all" > /etc/opkg/substore.conf
 opkg update
 opkg install luci-app-substore
 ```
@@ -76,16 +76,16 @@ opkg install luci-app-substore
 **OpenWrt 25.12 及以后（apk）：**
 
 ```sh
-wget -O /etc/apk/keys/substore-apk.pem https://substore-openwrt.445568.xyz/substore-apk.pem
+wget -O /etc/apk/keys/substore-apk.pem https://substore-openwrt.pages.dev/substore-apk.pem
 mkdir -p /etc/apk/repositories.d
-echo "https://substore-openwrt.445568.xyz/openwrt-25.12/all/packages.adb" > /etc/apk/repositories.d/substore.list
+echo "https://substore-openwrt.pages.dev/openwrt-25.12/all/packages.adb" > /etc/apk/repositories.d/substore.list
 apk update
 apk add luci-app-substore
 ```
 
 ### 方式三：LuCI 网页手动上传 ipk/apk
 
-在 [substore-openwrt.445568.xyz](https://substore-openwrt.445568.xyz) 对应架构目录下载 ipk/apk 文件，LuCI → 系统 → 软件包 → 上传安装。
+在 [substore-openwrt.pages.dev](https://substore-openwrt.pages.dev/) 对应架构目录下载 ipk/apk 文件，LuCI → 系统 → 软件包 → 上传安装。
 
 ---
 

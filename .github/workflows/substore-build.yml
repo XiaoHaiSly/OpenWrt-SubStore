@@ -176,12 +176,8 @@ jobs:
         run: |
           mkdir -p output
           find openwrt-sdk/bin -name "luci-app-substore*.apk" -exec cp {} output/ \;
-          for f in output/*.apk; do
-            base="$(basename "$f" .apk)"
-            case "$base" in
-              *_all) ;;
-              *) mv "$f" "output/${base}_all.apk" ;;
-            esac
+          for f in output/*_all.apk; do
+            [ -f "$f" ] && mv "$f" "${f%_all.apk}.apk"
           done
           ls -lh output/
 

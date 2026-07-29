@@ -20,10 +20,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name')
+          TAG=$(gh api repos/${{ github.repository }}/releases --jq \
+            '[.[] | select(.tag_name | (endswith("-ipk") or endswith("-apk")) | not)] | sort_by(.created_at) | last | .tag_name')
 
           if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
-            echo "错误: 未找到任何可用的 release" >&2
+            echo "错误: 未找到任何可用的合并 release（tag 不以 -ipk/-apk 结尾）" >&2
             exit 1
           fi
 

@@ -1,4 +1,4 @@
-name: 清理仓库所有 Actions 和 Releases
+name: 清理仓库 Actions Releases Tags
 
 on:
   workflow_dispatch:
@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: 删除所有 Actions 运行记录
         uses: actions/github-script@v7
         with:
@@ -25,22 +26,41 @@ jobs:
               }
             );
 
-            console.log(`找到 ${runs.length} 个 Actions 记录`);
+            console.log(`发现 ${runs.length} 个 Actions 运行记录`);
 
             for (const run of runs) {
-              console.log(`删除运行记录: ${run.id}`);
 
-              await github.rest.actions.deleteWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: run.id
-              });
+              // 跳过当前正在运行的 workflow
+              if (run.id === context.runId) {
+                console.log(`跳过当前运行: ${run.id}`);
+                continue;
+              }
+
+              try {
+
+                console.log(`删除 Actions: ${run.id}`);
+
+                await github.rest.actions.deleteWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id
+                });
+
+              } catch (error) {
+
+                console.log(
+                  `删除失败 ${run.id}: ${error.message}`
+                );
+
+              }
             }
+
 
       - name: 删除所有 Releases 和 Tags
         uses: actions/github-script@v7
         with:
           script: |
+
             const releases = await github.paginate(
               github.rest.repos.listReleases,
               {
@@ -50,30 +70,53 @@ jobs:
               }
             );
 
-            console.log(`找到 ${releases.length} 个 Release`);
+            console.log(`发现 ${releases.length} 个 Release`);
+
 
             for (const release of releases) {
 
-              console.log(`删除 Release: ${release.tag_name}`);
-
-              // 删除 Release
-              await github.rest.repos.deleteRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: release.id
-              });
-
-              // 删除 Tag
               try {
-                await github.rest.git.deleteRef({
+
+                console.log(
+                  `删除 Release: ${release.tag_name}`
+                );
+
+
+                // 删除 Release
+                await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  ref: `tags/${release.tag_name}`
+                  release_id: release.id
                 });
 
-                console.log(`删除 Tag: ${release.tag_name}`);
 
-              } catch(e) {
-                console.log(`Tag ${release.tag_name} 不存在`);
+                // 删除 Tag
+                try {
+
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${release.tag_name}`
+                  });
+
+                  console.log(
+                    `删除 Tag: ${release.tag_name}`
+                  );
+
+                } catch(e) {
+
+                  console.log(
+                    `Tag 不存在: ${release.tag_name}`
+                  );
+
+                }
+
+
+              } catch(error) {
+
+                console.log(
+                  `Release 删除失败 ${release.tag_name}: ${error.message}`
+                );
+
               }
             }

@@ -167,7 +167,6 @@ function runSourceScript(scriptPath, source) {
 
 var SOURCE_CHAIN = [
 	{ source: 'proxy', name: '加速代理' },
-	{ source: 'mirror', name: '静态镜像' },
 	{ source: 'official', name: '官方源' }
 ];
 

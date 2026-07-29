@@ -95,10 +95,9 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           shred -u /tmp/apk-sign.key 2>/dev/null || rm -f /tmp/apk-sign.key
 
-      - name: Copy IPK public key and install.sh
+      - name: Copy IPK public key
         run: |
           cp keys/ipk-sign.pub site/substore-ipk.pub
-          cp scripts/install.sh site/install.sh
 
       - name: Mirror Sub-Store backend/frontend assets
         env:

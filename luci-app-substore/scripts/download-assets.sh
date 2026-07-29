@@ -22,9 +22,8 @@ fetch_tag() {
 	repo="$1"
 	AUTH_HEADER=""
 	[ -n "$GITHUB_TOKEN" ] && AUTH_HEADER="--header=Authorization: token $GITHUB_TOKEN"
-	{ wget $WGET_OPTS $AUTH_HEADER -qO- "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null \
-	    | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1; \
-	  echo unknown; } | head -n1
+	wget $WGET_OPTS $AUTH_HEADER -qO- "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null \
+	    | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1
 }
 
 case "$KIND" in
@@ -46,11 +45,16 @@ backend)
 	fi
 
 	echo "记录后端版本号..."
-	if [ -n "$SUBSTORE_BACKEND_TAG" ]; then
+	BACKEND_TAG_LIVE="$(fetch_tag "sub-store-org/Sub-Store")"
+	if [ -n "$BACKEND_TAG_LIVE" ]; then
+		echo "$BACKEND_TAG_LIVE" > "$LIBEXEC_DIR/backend.version"
+		echo "API 查询成功，后端版本号: $BACKEND_TAG_LIVE"
+	elif [ -n "$SUBSTORE_BACKEND_TAG" ]; then
 		echo "$SUBSTORE_BACKEND_TAG" > "$LIBEXEC_DIR/backend.version"
-		echo "使用 CI 传入的后端版本号: $SUBSTORE_BACKEND_TAG"
+		echo "API 查询失败，使用兜底版本号（Makefile/CI 传入）: $SUBSTORE_BACKEND_TAG"
 	else
-		fetch_tag "sub-store-org/Sub-Store" > "$LIBEXEC_DIR/backend.version"
+		echo "unknown" > "$LIBEXEC_DIR/backend.version"
+		echo "API 查询失败，且没有兜底版本号，标记为 unknown" >&2
 	fi
 	;;
 
@@ -80,11 +84,16 @@ frontend)
 	rm -f "$TMP_ZIP"
 
 	echo "记录前端版本号..."
-	if [ -n "$SUBSTORE_FRONTEND_TAG" ]; then
+	FRONTEND_TAG_LIVE="$(fetch_tag "sub-store-org/Sub-Store-Front-End")"
+	if [ -n "$FRONTEND_TAG_LIVE" ]; then
+		echo "$FRONTEND_TAG_LIVE" > "$LIBEXEC_DIR/frontend.version"
+		echo "API 查询成功，前端版本号: $FRONTEND_TAG_LIVE"
+	elif [ -n "$SUBSTORE_FRONTEND_TAG" ]; then
 		echo "$SUBSTORE_FRONTEND_TAG" > "$LIBEXEC_DIR/frontend.version"
-		echo "使用 CI 传入的前端版本号: $SUBSTORE_FRONTEND_TAG"
+		echo "API 查询失败，使用兜底版本号（Makefile/CI 传入）: $SUBSTORE_FRONTEND_TAG"
 	else
-		fetch_tag "sub-store-org/Sub-Store-Front-End" > "$LIBEXEC_DIR/frontend.version"
+		echo "unknown" > "$LIBEXEC_DIR/frontend.version"
+		echo "API 查询失败，且没有兜底版本号，标记为 unknown" >&2
 	fi
 
 	if [ ! -f "$WWW_DIR/dist/index.html" ]; then

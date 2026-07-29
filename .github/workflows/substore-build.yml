@@ -1,0 +1,203 @@
+name: luci-app-substore-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "统一版本号（由 release-pipeline 传入，留空则自动生成）"
+        required: false
+        type: string
+      backend_tag:
+        description: "Sub-Store 后端版本号（由 release-pipeline 传入，留空则构建时自行查询）"
+        required: false
+        type: string
+      frontend_tag:
+        description: "Sub-Store 前端版本号（由 release-pipeline 传入，留空则构建时自行查询）"
+        required: false
+        type: string
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="2.9.${{ github.run_number }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "本次构建版本号: $VERSION"
+
+  build-ipk:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Set package version
+        run: |
+          if [ -f src/luci-app-substore/Makefile ]; then
+            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.version }}/g" src/luci-app-substore/Makefile
+            echo "Successfully updated PKG_VERSION to: ${{ needs.prepare.outputs.version }}"
+            grep "PKG_VERSION:=" src/luci-app-substore/Makefile
+          else
+            echo "Warning: Makefile not found in src/ directory!"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3 zstd
+
+      - name: Download OpenWrt SDK
+        run: |
+          wget -q "https://downloads.openwrt.org/releases/24.10.7/targets/x86/64/openwrt-sdk-24.10.7-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst" -O sdk.tar.zst
+          tar --zstd -xf sdk.tar.zst
+          mv openwrt-sdk-* openwrt-sdk
+
+      - name: Setup feeds
+        run: |
+          cd openwrt-sdk
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
+
+      - name: Copy package
+        run: |
+          cp -r src/luci-app-substore openwrt-sdk/package/luci-app-substore
+          ls openwrt-sdk/package/luci-app-substore/
+
+      - name: Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd openwrt-sdk
+          make defconfig
+          if ! make package/luci-app-substore/compile V=s \
+              SUBSTORE_BACKEND_TAG="${{ inputs.backend_tag }}" \
+              SUBSTORE_FRONTEND_TAG="${{ inputs.frontend_tag }}" \
+              > build.log 2>&1; then
+            echo "=== 编译失败，日志最后 150 行 ==="
+            tail -150 build.log
+            exit 1
+          fi
+          tail -50 build.log
+
+      - name: Collect IPK
+        run: |
+          mkdir -p output
+          find openwrt-sdk/bin -name "luci-app-substore*.ipk" -exec cp {} output/ \;
+          ls -lh output/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-substore-ipk
+          path: output/*.ipk
+
+  build-apk:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Set package version
+        run: |
+          if [ -f src/luci-app-substore/Makefile ]; then
+            sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.version }}/g" src/luci-app-substore/Makefile
+            echo "Successfully updated PKG_VERSION to: ${{ needs.prepare.outputs.version }}"
+            grep "PKG_VERSION:=" src/luci-app-substore/Makefile
+          else
+            echo "Warning: Makefile not found in src/ directory!"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3 zstd
+
+      - name: Download OpenWrt SDK
+        run: |
+          wget -q "https://downloads.openwrt.org/releases/25.12.4/targets/x86/64/openwrt-sdk-25.12.4-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst" -O sdk.tar.zst
+          tar --zstd -xf sdk.tar.zst
+          mv openwrt-sdk-* openwrt-sdk
+
+      - name: Setup feeds
+        run: |
+          cd openwrt-sdk
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
+
+      - name: Copy package
+        run: |
+          cp -r src/luci-app-substore openwrt-sdk/package/luci-app-substore
+
+      - name: Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd openwrt-sdk
+          make defconfig
+          if ! make package/luci-app-substore/compile V=s \
+              SUBSTORE_BACKEND_TAG="${{ inputs.backend_tag }}" \
+              SUBSTORE_FRONTEND_TAG="${{ inputs.frontend_tag }}" \
+              > build.log 2>&1; then
+            echo "=== 编译失败，日志最后 150 行 ==="
+            tail -150 build.log
+            exit 1
+          fi
+          tail -80 build.log
+
+      - name: Collect APK
+        run: |
+          mkdir -p output
+          find openwrt-sdk/bin -name "luci-app-substore*.apk" -exec cp {} output/ \;
+          ls -lh output/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-substore-apk
+          path: output/*.apk
+
+  release:
+    needs: [prepare, build-ipk, build-apk]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download IPK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: luci-app-substore-ipk
+          path: output
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: luci-app-substore-apk
+          path: output
+
+      - name: List files
+        run: ls -lh output/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: luci-app-substore v${{ needs.prepare.outputs.version }}
+          files: |
+            output/*.ipk
+            output/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

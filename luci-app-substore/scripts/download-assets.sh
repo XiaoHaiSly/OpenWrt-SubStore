@@ -3,9 +3,9 @@
 set -e
 
 SUBSTORE_BACKEND_URL="https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store.bundle.js"
-SUBSTORE_MIRROR_BACKEND_URL="https://substore-openwrt.445568.xyz/assets/sub-store.bundle.js"
+SUBSTORE_MIRROR_BACKEND_URL="https://substore-openwrt.pages.dev/assets/sub-store.bundle.js"
 SUBSTORE_FRONTEND_URL="https://github.com/sub-store-org/Sub-Store-Front-End/releases/latest/download/dist.zip"
-SUBSTORE_MIRROR_FRONTEND_URL="https://substore-openwrt.445568.xyz/assets/dist.zip"
+SUBSTORE_MIRROR_FRONTEND_URL="https://substore-openwrt.pages.dev/assets/dist.zip"
 
 WGET_OPTS="${WGET_OPTS:---timeout=15 --tries=2 --waitretry=3}"
 

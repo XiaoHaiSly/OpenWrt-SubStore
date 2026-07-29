@@ -176,29 +176,6 @@ jobs:
         run: |
           mkdir -p output
           find openwrt-sdk/bin -name "luci-app-substore*.apk" -exec cp {} output/ \;
-          for f in output/*.apk; do
-            base="$(basename "$f" .apk)"
-            case "$base" in
-              *_all) ;;
-              *) mv "$f" "output/${base}_all.apk" ;;
-            esac
-          done
-
-          # 保持文件名为 _all，但修改 APK 内部架构为 noarch
-          # OpenWrt 25.12 apk 使用 noarch 识别纯脚本包
-          for f in output/*.apk; do
-            if tar tf "$f" | grep -q ".PKGINFO"; then
-              mkdir -p tmp-apk
-              tar xf "$f" -C tmp-apk
-              if grep -q "^arch = all" tmp-apk/.PKGINFO; then
-                sed -i "s/^arch = all$/arch = noarch/" tmp-apk/.PKGINFO
-                (cd tmp-apk && tar czf "../$(basename "$f").tmp" .)
-                mv "$(dirname "$f")/$(basename "$f").tmp" "$f"
-              fi
-              rm -rf tmp-apk
-            fi
-          done
-
           ls -lh output/
 
       - name: Upload artifact

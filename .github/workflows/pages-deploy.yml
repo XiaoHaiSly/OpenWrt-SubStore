@@ -16,21 +16,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3 wget unzip
 
-      - name: Find latest IPK release tag
+      - name: Find latest combined release tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=$(gh api repos/${{ github.repository }}/releases --jq '[.[] | select(.tag_name | endswith("-ipk"))] | sort_by(.created_at) | last | .tag_name')
-          echo "IPK_TAG=$TAG" >> $GITHUB_ENV
-          echo "IPK tag: $TAG"
+          TAG=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name')
 
-      - name: Find latest APK release tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG=$(gh api repos/${{ github.repository }}/releases --jq '[.[] | select(.tag_name | endswith("-apk"))] | sort_by(.created_at) | last | .tag_name')
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+            echo "错误: 未找到任何可用的 release" >&2
+            exit 1
+          fi
+
+          echo "IPK_TAG=$TAG" >> $GITHUB_ENV
           echo "APK_TAG=$TAG" >> $GITHUB_ENV
-          echo "APK tag: $TAG"
+          echo "使用的 release tag: $TAG"
 
       - name: Download IPK asset
         env:
@@ -38,6 +37,11 @@ jobs:
         run: |
           mkdir -p ipk-download
           gh release download "$IPK_TAG" --pattern "*.ipk" --dir ipk-download --repo ${{ github.repository }}
+          ls -lh ipk-download/
+          if [ -z "$(find ipk-download -name '*.ipk' -print -quit)" ]; then
+            echo "错误: 从 release $IPK_TAG 没有下载到任何 .ipk 文件" >&2
+            exit 1
+          fi
 
       - name: Download APK asset
         env:
@@ -45,6 +49,11 @@ jobs:
         run: |
           mkdir -p apk-download
           gh release download "$APK_TAG" --pattern "*.apk" --dir apk-download --repo ${{ github.repository }}
+          ls -lh apk-download/
+          if [ -z "$(find apk-download -name '*.apk' -print -quit)" ]; then
+            echo "错误: 从 release $APK_TAG 没有下载到任何 .apk 文件" >&2
+            exit 1
+          fi
 
       - name: Download OpenWrt SDK (for usign + apk host tools)
         run: |

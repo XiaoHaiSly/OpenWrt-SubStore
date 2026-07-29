@@ -16,45 +16,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3 wget unzip
 
-      - name: Find latest combined release tag
+      - name: Find latest release tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=$(gh api repos/${{ github.repository }}/releases --jq \
-            '[.[] | select(.tag_name | (endswith("-ipk") or endswith("-apk")) | not)] | sort_by(.created_at) | last | .tag_name')
-
-          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
-            echo "错误: 未找到任何可用的合并 release（tag 不以 -ipk/-apk 结尾）" >&2
+          TAG=$(gh release list --repo ${{ github.repository }} --limit 1 --json tagName --jq '.[0].tagName // empty')
+          if [ -z "$TAG" ]; then
+            echo "错误: 未能找到任何 Release" >&2
             exit 1
           fi
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          echo "最新 Release tag: $TAG"
 
-          echo "IPK_TAG=$TAG" >> $GITHUB_ENV
-          echo "APK_TAG=$TAG" >> $GITHUB_ENV
-          echo "使用的 release tag: $TAG"
-
-      - name: Download IPK asset
+      - name: Download IPK + APK assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p ipk-download
-          gh release download "$IPK_TAG" --pattern "*.ipk" --dir ipk-download --repo ${{ github.repository }}
-          ls -lh ipk-download/
-          if [ -z "$(find ipk-download -name '*.ipk' -print -quit)" ]; then
-            echo "错误: 从 release $IPK_TAG 没有下载到任何 .ipk 文件" >&2
-            exit 1
-          fi
-
-      - name: Download APK asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p apk-download
-          gh release download "$APK_TAG" --pattern "*.apk" --dir apk-download --repo ${{ github.repository }}
-          ls -lh apk-download/
-          if [ -z "$(find apk-download -name '*.apk' -print -quit)" ]; then
-            echo "错误: 从 release $APK_TAG 没有下载到任何 .apk 文件" >&2
-            exit 1
-          fi
+          mkdir -p ipk-download apk-download
+          gh release download "$RELEASE_TAG" --pattern "*.ipk" --dir ipk-download --repo ${{ github.repository }}
+          gh release download "$RELEASE_TAG" --pattern "*.apk" --dir apk-download --repo ${{ github.repository }}
 
       - name: Download OpenWrt SDK (for usign + apk host tools)
         run: |

@@ -2,7 +2,6 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for Sub-Store (Subscription Manager)
 LUCI_DEPENDS:=+node +unzip
-LUCI_PKGARCH:=all
 
 PKG_NAME:=luci-app-substore
 PKG_VERSION:=2026.07.29

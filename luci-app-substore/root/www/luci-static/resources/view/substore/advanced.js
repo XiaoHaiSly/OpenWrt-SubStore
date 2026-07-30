@@ -17,7 +17,7 @@ return view.extend({
 		s = m.section(form.NamedSection, 'config', 'substore', _('高级设置'));
 		s.anonymous = true;
 
-		o = s.option(form.Value, 'backend_custom_name', _('实例名称'), _('显示在前端界面上的后端名称'));
+		o = s.option(form.Value, 'backend_custom_name', _('自定义实例名称'), _('显示在前端界面上的后端名称'));
 		o.placeholder = 'OpenWrt';
 
 		o = s.option(form.Value, 'backend_custom_icon', _('自定义图标URL'), _('显示在前端界面上的后端图标'));

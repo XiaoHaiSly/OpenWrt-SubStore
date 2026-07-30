@@ -3,10 +3,9 @@
 'require form';
 'require uci';
 
-// 校验单个 cron 字段值域，只对纯数字做范围检查，含 * / - , 的跳过范围检查
 function validateCronField(val, min, max, fieldName) {
 	if (val === '*') return true;
-	if (/[\/\-\,\*]/.test(val)) return true; // 含特殊符号的组合写法，跳过范围校验
+	if (/[\/\-\,\*]/.test(val)) return true;
 	var n = parseInt(val, 10);
 	if (isNaN(n)) {
 		return _('%s 字段包含非法字符').format(fieldName);
@@ -17,7 +16,6 @@ function validateCronField(val, min, max, fieldName) {
 	return true;
 }
 
-// 校验标准 cron 表达式：5个字段，逐字段检查范围
 function validateCron(value) {
 	if (!value || value.trim() === '') return true;
 	var parts = value.trim().split(/\s+/);
@@ -38,7 +36,6 @@ function validateCron(value) {
 	return true;
 }
 
-// 校验 produce_cron 格式：cron表达式,类型,名称；多个用分号分隔
 function validateProduceCron(value) {
 	if (!value || value.trim() === '') return true;
 	var entries = value.trim().split(';');

@@ -3,9 +3,6 @@
 'require form';
 'require uci';
 
-// 校验监听地址：只允许 ::（IPv6 全部地址）、0.0.0.0（IPv4 全部地址）、
-// 127.0.0.1（仅本机回环）这三个精确值，其余一律视为非法——不再放行
-// 任意合法 IPv4/IPv6，避免监听到不该监听的地址上。
 function validateHost(value) {
 	if (!value || value.trim() === '') return true;
 	var v = value.trim();
@@ -15,7 +12,6 @@ function validateHost(value) {
 	return _('监听地址只能是 ::（IPv4+IPv6）、0.0.0.0（仅IPv4）');
 }
 
-// 校验代理地址：必须以支持的协议开头，且后面有实际内容
 function validateProxy(value) {
 	if (!value || value.trim() === '') return true;
 	var v = value.trim();
@@ -23,7 +19,6 @@ function validateProxy(value) {
 	return _('代理地址必须以 http://、https:// 或 socks5:// 开头');
 }
 
-// 校验更新加速代理：必须是 http/https 开头的地址前缀（用于拼接在 GitHub 链接前面）
 function validateDownloadProxy(value) {
 	if (!value || value.trim() === '') return true;
 	var v = value.trim();

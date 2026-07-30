@@ -439,6 +439,7 @@ return view.extend({
 
 		s.tab('basic', _('基础设置'));
 		s.tab('recovery', _('数据恢复'));
+		s.tab('display', _('自定义显示'));
 
 		o = s.taboption('basic', form.Value, 'data_dir', _('数据目录'), _('Sub-Store 数据文件存放路径'));
 		o.default = '/etc/sub-store';
@@ -461,6 +462,12 @@ return view.extend({
 				uci.set('substore', section_id, 'frontend_backend_path', '/' + value);
 			}
 		};
+
+		o = s.taboption('display', form.Value, 'backend_custom_name', _('自定义实例名称'), _('显示在前端界面上的后端名称'));
+		o.placeholder = 'OpenWrt';
+
+		o = s.taboption('display', form.Value, 'backend_custom_icon', _('自定义图标URL'), _('显示在前端界面上的后端图标'));
+		o.placeholder = 'https://example.com/icon.png';
 
 		o = s.taboption('recovery', form.Value, 'data_url', _('远程数据URL'), _('启动时从此地址拉取并恢复数据，支持 Gist Raw 链接'));
 		o.placeholder = 'https://gist.githubusercontent.com/user/id/raw/Sub-Store#noCache';

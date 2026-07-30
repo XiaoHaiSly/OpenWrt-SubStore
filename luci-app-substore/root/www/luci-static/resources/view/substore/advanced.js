@@ -13,7 +13,6 @@ return view.extend({
 
 		m = new form.Map('substore', _('Sub-Store'), null);
 
-		// ── 高级设置 ────────────────────────────────────────────
 		s = m.section(form.NamedSection, 'config', 'substore', _('高级设置'));
 		s.anonymous = true;
 
@@ -32,7 +31,6 @@ return view.extend({
 		o.default = '1mb';
 		o.placeholder = '1mb';
 
-		// ── 推送通知 ────────────────────────────────────────────
 		s = m.section(form.NamedSection, 'config', 'substore', _('推送通知'));
 		s.anonymous = true;
 

@@ -16,7 +16,11 @@ UNZIP=$(command -v unzip)
 ZIP_PATH=/tmp/dist.zip
 DIST_PATH=/www/sub-store/dist
 DIST_NEW_PATH=/www/sub-store/dist.new
-PROXY_PREFIX="https://gh.445568.xyz/"
+PROXY_PREFIX=$(uci -q get substore.config.download_proxy) || PROXY_PREFIX=""
+# 容错处理：去掉末尾可能存在的斜杠，再统一补一个，这样加速地址结尾加不加 / 都能正常拼接
+PROXY_PREFIX="${PROXY_PREFIX%/}"
+[ -n "$PROXY_PREFIX" ] && PROXY_PREFIX="$PROXY_PREFIX/"
+GITHUB_TOKEN=$(uci -q get substore.config.github_token) || GITHUB_TOKEN=""
 OFFICIAL_URL="https://github.com/sub-store-org/Sub-Store-Front-End/releases/latest/download/dist.zip"
 PROXY_URL="$PROXY_PREFIX$OFFICIAL_URL"
 GITHUB_API_URL="https://api.github.com/repos/sub-store-org/Sub-Store-Front-End/releases/latest"
@@ -28,15 +32,22 @@ if [ -z "$NODE" ] || [ -z "$UNZIP" ]; then
 	exit 1
 fi
 
+if [ "$SOURCE" = "proxy" ] && [ -z "$PROXY_PREFIX" ]; then
+	echo "DOWNLOAD_FAILED: 未配置更新加速代理"
+	exit 0
+fi
+
 case "$SOURCE" in
 	proxy) URL="$PROXY_URL" ;;
 	official) URL="$OFFICIAL_URL" ;;
 esac
 
-DL_OUTPUT=$("$NODE" -e "
+DL_OUTPUT=$(SUBSTORE_URL_ENV="$URL" "$NODE" -e "
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
 const { Readable } = require('stream');
+
+var url = process.env.SUBSTORE_URL_ENV || '';
 
 async function download(url) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
@@ -50,7 +61,7 @@ async function download(url) {
   if (!isZip) throw new Error('返回内容不是有效的 zip 文件（可能是 404 错误页）');
 }
 
-download('$URL').catch(function(e) {
+download(url).catch(function(e) {
   console.log('DOWNLOAD_FAILED: ' + (e && e.message || e));
 });
 ")
@@ -90,7 +101,7 @@ if [ ! -f "$DIST_PATH/index.html" ]; then
 	exit 1
 fi
 
-"$NODE" -e "
+GITHUB_TOKEN_ENV="$GITHUB_TOKEN" SOURCE_ENV="$SOURCE" PROXY_API_URL_ENV="$PROXY_API_URL" GITHUB_API_URL_ENV="$GITHUB_API_URL" "$NODE" -e "
 const fs = require('fs');
 
 function looksLikeVersionTag(s) {
@@ -101,9 +112,15 @@ function looksLikeVersionTag(s) {
   return /^[A-Za-z0-9._+-]+\$/.test(t);
 }
 
+var token = process.env.GITHUB_TOKEN_ENV || '';
+var authHeaders = token ? { 'Authorization': 'token ' + token } : {};
+var source = process.env.SOURCE_ENV || 'official';
+var proxyApiUrl = process.env.PROXY_API_URL_ENV || '';
+var githubApiUrl = process.env.GITHUB_API_URL_ENV || '';
+
 async function fromProxyApi() {
   try {
-    const res = await fetch('$PROXY_API_URL', { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(proxyApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
     if (!res.ok) return null;
     const data = await res.json();
     var tag = data && data.tag_name;
@@ -115,7 +132,7 @@ async function fromProxyApi() {
 
 async function fromDirectApi() {
   try {
-    const res = await fetch('$GITHUB_API_URL', { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(githubApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
     if (!res.ok) return null;
     const data = await res.json();
     var tag = data && data.tag_name;
@@ -131,7 +148,7 @@ var ORDER = {
 };
 
 (async () => {
-  var fns = ORDER['$SOURCE'] || ORDER.official;
+  var fns = ORDER[source] || ORDER.official;
   var tag = null;
   for (var i = 0; i < fns.length; i++) {
     tag = await fns[i]();

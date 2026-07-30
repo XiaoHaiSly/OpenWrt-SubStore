@@ -23,6 +23,14 @@ function validateProxy(value) {
 	return _('代理地址必须以 http://、https:// 或 socks5:// 开头');
 }
 
+// 校验更新加速代理：必须是 http/https 开头的地址前缀（用于拼接在 GitHub 链接前面）
+function validateDownloadProxy(value) {
+	if (!value || value.trim() === '') return true;
+	var v = value.trim();
+	if (/^https?:\/\/.+/.test(v)) return true;
+	return _('加速代理地址必须以 http:// 或 https:// 开头');
+}
+
 return view.extend({
 	load: function() {
 		return uci.load('substore');
@@ -52,6 +60,17 @@ return view.extend({
 		o.validate = function(section_id, value) {
 			return validateProxy(value);
 		};
+
+		o = s.option(form.Value, 'download_proxy', _('更新加速代理'), _('点击"更新前端/更新后端"时，用于加速下载 GitHub 资源的反代地址前缀。留空则直接连接 GitHub；填写后将优先走加速代理，失败自动回退直连。'));
+		o.default = 'https://ghfast.top';
+		o.placeholder = 'https://ghfast.top';
+		o.validate = function(section_id, value) {
+			return validateDownloadProxy(value);
+		};
+
+		o = s.option(form.Value, 'github_token', _('GitHub 令牌'), _('查询版本号时携带此令牌请求 GitHub API，可将匿名 60 次/小时的限额提升至 5000 次/小时。留空则匿名请求。'));
+		o.password = true;
+		o.placeholder = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 
 		return m.render();
 	}

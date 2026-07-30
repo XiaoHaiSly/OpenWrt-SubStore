@@ -165,14 +165,24 @@ function runSourceScript(scriptPath, source) {
 	});
 }
 
-var SOURCE_CHAIN = [
-	{ source: 'proxy', name: '加速代理' },
-	{ source: 'official', name: '官方源' }
-];
+function buildSourceChain() {
+	var proxy = uci.get('substore', 'config', 'download_proxy');
+	if (proxy && proxy.trim() !== '') {
+		return [
+			{ source: 'proxy', name: '代理加速' },
+			{ source: 'official', name: '直连' }
+		];
+	}
+	return [
+		{ source: 'official', name: '直连' }
+	];
+}
 
 function updateWithFallback(scriptPath, label, statusEl) {
+	var chain = buildSourceChain();
+
 	function tryStep(i) {
-		var step = SOURCE_CHAIN[i];
+		var step = chain[i];
 		statusEl.style.color = '#666';
 		statusEl.textContent = '正在尝试' + step.name + '下载' + label + '...';
 
@@ -180,7 +190,7 @@ function updateWithFallback(scriptPath, label, statusEl) {
 			if (r.ok) return r;
 			if (!r.retry) throw new Error(r.message);
 
-			var next = SOURCE_CHAIN[i + 1];
+			var next = chain[i + 1];
 			if (!next) throw new Error(step.name + '下载失败：' + r.message);
 
 			statusEl.style.color = '#e67e22';
@@ -423,18 +433,18 @@ return view.extend({
 			return '<div id="substore_enable_hint" style="color:#e74c3c;font-size:13px;">⚠ ' + escapeHtml(ENABLE_HINT_TEXT) + '</div>';
 		};
 
-		s = m.section(form.NamedSection, 'config', 'substore', _('基础设置'));
+		s = m.section(form.NamedSection, 'config', 'substore', null);
 		s.anonymous = true;
 		s.addremove = false;
 
-		o = s.option(form.Value, 'data_dir', _('数据目录'), _('Sub-Store 数据文件存放路径'));
+		s.tab('basic', _('基础设置'));
+		s.tab('recovery', _('数据恢复'));
+
+		o = s.taboption('basic', form.Value, 'data_dir', _('数据目录'), _('Sub-Store 数据文件存放路径'));
 		o.default = '/etc/sub-store';
 		o.placeholder = '/etc/sub-store';
 
-		o = s.option(form.Value, 'backend_custom_name', _('实例名称'), _('显示在前端界面上的后端名称'));
-		o.default = 'OpenWrt';
-
-		o = s.option(form.Value, 'frontend_backend_path', _('后端路径前缀'), _('作为 API 路径使用，避免使用特殊符号'));
+		o = s.taboption('basic', form.Value, 'frontend_backend_path', _('后端路径前缀'), _('作为 API 路径使用，避免使用特殊符号'));
 		o.default = '/sub-store-api';
 		o.placeholder = 'sub-store-api';
 
@@ -451,6 +461,12 @@ return view.extend({
 				uci.set('substore', section_id, 'frontend_backend_path', '/' + value);
 			}
 		};
+
+		o = s.taboption('recovery', form.Value, 'data_url', _('远程数据URL'), _('启动时从此地址拉取并恢复数据，支持 Gist Raw 链接'));
+		o.placeholder = 'https://gist.githubusercontent.com/user/id/raw/Sub-Store#noCache';
+
+		o = s.taboption('recovery', form.Value, 'data_url_post', _('拉取后执行'), _('拉取数据后执行的 JS 表达式，例如设置 Gist Token'));
+		o.placeholder = "content.settings.gistToken='your_token_here'";
 
 		return m.render().then(function(node) {
 

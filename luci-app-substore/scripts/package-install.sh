@@ -28,7 +28,7 @@ install -d "$DEST/usr/share/rpcd/acl.d"
 install -m0644 "$SRC/root/usr/share/rpcd/acl.d/luci-app-substore.json" "$DEST/usr/share/rpcd/acl.d/luci-app-substore.json"
 
 install -d "$DEST/www/luci-static/resources/view/substore"
-for f in main.js advanced.js network.js recovery.js cron.js; do
+for f in main.js advanced.js network.js cron.js; do
 	install -m0644 "$SRC/root/www/luci-static/resources/view/substore/$f" \
 		"$DEST/www/luci-static/resources/view/substore/$f"
 done

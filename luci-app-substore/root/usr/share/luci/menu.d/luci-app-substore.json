@@ -31,14 +31,6 @@
 			"path": "substore/cron"
 		}
 	},
-	"admin/services/substore/recovery": {
-		"title": "数据恢复",
-		"order": 35,
-		"action": {
-			"type": "view",
-			"path": "substore/recovery"
-		}
-	},
 	"admin/services/substore/advanced": {
 		"title": "高级设置",
 		"order":40,

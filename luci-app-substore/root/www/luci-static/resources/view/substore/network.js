@@ -12,7 +12,7 @@ function validateHost(value) {
 
 	if (v === '::' || v === '0.0.0.0' || v === '127.0.0.1') return true;
 
-	return _('监听地址只能是 ::（IPv4+IPv6）、0.0.0.0（仅IPv4）或 127.0.0.1（仅本机）');
+	return _('监听地址只能是 ::（IPv4+IPv6）、0.0.0.0（仅IPv4）');
 }
 
 // 校验代理地址：必须以支持的协议开头，且后面有实际内容
@@ -61,16 +61,15 @@ return view.extend({
 			return validateProxy(value);
 		};
 
-		o = s.option(form.Value, 'download_proxy', _('更新加速代理'), _('点击"更新前端/更新后端"时，用于加速下载 GitHub 资源的反代地址前缀。留空则直接连接 GitHub；填写后将优先走加速代理，失败自动回退直连。'));
-		o.default = 'https://ghfast.top';
-		o.placeholder = 'https://ghfast.top';
+		o = s.option(form.Value, 'download_proxy', _('更新加速代理'), _('点击"更新前端/后端"时，用于加速下载 GitHub 资源的反代地址前缀。留空则直接连接 GitHub'));
+		o.placeholder = 'https://ghfast.top/';
 		o.validate = function(section_id, value) {
 			return validateDownloadProxy(value);
 		};
 
-		o = s.option(form.Value, 'github_token', _('GitHub 令牌'), _('查询版本号时携带此令牌请求 GitHub API，可将匿名 60 次/小时的限额提升至 5000 次/小时。留空则匿名请求。'));
+		o = s.option(form.Value, 'github_token', _('GitHub 令牌'), _('查询版本号时携带此令牌请求 GitHub API，留空则匿名请求。'));
 		o.password = true;
-		o.placeholder = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+		o.placeholder = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 
 		return m.render();
 	}

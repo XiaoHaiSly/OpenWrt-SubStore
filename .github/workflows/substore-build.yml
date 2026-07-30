@@ -93,8 +93,6 @@ jobs:
           cd openwrt-sdk
           make defconfig
           if ! make package/luci-app-substore/compile V=s \
-              SUBSTORE_BACKEND_TAG="${{ needs.prepare.outputs.backend_tag }}" \
-              SUBSTORE_FRONTEND_TAG="${{ needs.prepare.outputs.frontend_tag }}" \
               > build.log 2>&1; then
             echo "=== 编译失败，日志最后 150 行 ==="
             tail -150 build.log
@@ -163,8 +161,6 @@ jobs:
           cd openwrt-sdk
           make defconfig
           if ! make package/luci-app-substore/compile V=s \
-              SUBSTORE_BACKEND_TAG="${{ needs.prepare.outputs.backend_tag }}" \
-              SUBSTORE_FRONTEND_TAG="${{ needs.prepare.outputs.frontend_tag }}" \
               > build.log 2>&1; then
             echo "=== 编译失败，日志最后 150 行 ==="
             tail -150 build.log
@@ -241,9 +237,7 @@ jobs:
         run: |
           sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.prepare.outputs.pkg_version }}/" luci-app-substore/Makefile
           sed -i "s/PKG_RELEASE:=.*/PKG_RELEASE:=${{ needs.prepare.outputs.pkg_release }}/" luci-app-substore/Makefile
-          sed -i "s/SUBSTORE_BACKEND_TAG:=.*/SUBSTORE_BACKEND_TAG:=${{ needs.prepare.outputs.backend_tag }}/" luci-app-substore/Makefile
-          sed -i "s/SUBSTORE_FRONTEND_TAG:=.*/SUBSTORE_FRONTEND_TAG:=${{ needs.prepare.outputs.frontend_tag }}/" luci-app-substore/Makefile
-          grep -E "PKG_VERSION:=|PKG_RELEASE:=|SUBSTORE_BACKEND_TAG:=|SUBSTORE_FRONTEND_TAG:=" luci-app-substore/Makefile
+          grep -E "PKG_VERSION:=|PKG_RELEASE:=" luci-app-substore/Makefile
 
       - name: Commit and push
         run: |

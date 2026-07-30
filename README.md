@@ -136,7 +136,7 @@ make menuconfig   # LuCI -> Applications -> luci-app-substore 打勾
 make package/luci-app-substore/compile V=s
 ```
 
-构建过程会联网下载 Sub-Store 官方 Release 的后端 bundle 和前端 dist，请确保编译环境能访问 GitHub（或者自行把 `scripts/download-assets.sh` 里的 `SUBSTORE_MIRROR_*_URL` 改成你自己的可用镜像地址）。
+构建过程会联网下载 Sub-Store 官方 Release 的后端 bundle 和前端 dist，并通过 GitHub API 查询最新版本号，请确保编译环境能访问 GitHub（`github.com` 和 `api.github.com`）。
 
 ---
 

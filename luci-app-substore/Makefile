@@ -9,14 +9,9 @@ PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0
 PKG_MAINTAINER:=xiaohai
 
-SUBSTORE_BACKEND_TAG:=2.36.26
-SUBSTORE_FRONTEND_TAG:=2.29.8
-
 include $(TOPDIR)/feeds/luci/luci.mk
 
 define Package/luci-app-substore/install
-	SUBSTORE_BACKEND_TAG="$(SUBSTORE_BACKEND_TAG)" \
-	SUBSTORE_FRONTEND_TAG="$(SUBSTORE_FRONTEND_TAG)" \
 	sh $(CURDIR)/scripts/package-install.sh $(1) $(CURDIR)
 endef
 

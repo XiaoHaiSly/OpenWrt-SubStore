@@ -61,7 +61,7 @@ return view.extend({
 			return validateProxy(value);
 		};
 
-		o = s.option(form.Value, 'download_proxy', _('更新加速代理'), _('点击"更新前端/后端"时，用于加速下载 GitHub 资源的反代地址前缀。留空则直接连接 GitHub'));
+		o = s.option(form.Value, 'download_proxy', _('更新加速代理'), _('点击"更新前端/后端"时，用于加速下载资源的反代地址前缀。留空则直连 GitHub'));
 		o.placeholder = 'https://ghfast.top/';
 		o.validate = function(section_id, value) {
 			return validateDownloadProxy(value);

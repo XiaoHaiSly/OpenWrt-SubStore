@@ -437,7 +437,7 @@ return view.extend({
 		s.anonymous = true;
 		s.addremove = false;
 
-		s.tab('basic', _('基础设置'));
+		s.tab('basic', _('基础配置'));
 		s.tab('recovery', _('数据恢复'));
 		s.tab('display', _('自定义显示'));
 

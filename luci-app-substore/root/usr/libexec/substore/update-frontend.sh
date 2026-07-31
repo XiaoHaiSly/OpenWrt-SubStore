@@ -7,11 +7,11 @@ if [ "$SOURCE" != "proxy" ] && [ "$SOURCE" != "official" ]; then
 	exit 1
 fi
 
-NODE=$(command -v node)
-MV=$(command -v mv)
-RM=$(command -v rm)
-FIND=$(command -v find)
-UNZIP=$(command -v unzip)
+NODE=$(command -v node) || NODE=""
+MV=$(command -v mv) || MV=""
+RM=$(command -v rm) || RM=""
+FIND=$(command -v find) || FIND=""
+UNZIP=$(command -v unzip) || UNZIP=""
 
 ZIP_PATH=/tmp/dist.zip
 DIST_PATH=/www/sub-store/dist

@@ -7,9 +7,9 @@ if [ "$SOURCE" != "proxy" ] && [ "$SOURCE" != "official" ]; then
 	exit 1
 fi
 
-NODE=$(command -v node)
-MV=$(command -v mv)
-RM=$(command -v rm)
+NODE=$(command -v node) || NODE=""
+MV=$(command -v mv) || MV=""
+RM=$(command -v rm) || RM=""
 BUNDLE=/usr/libexec/substore/sub-store.bundle.js
 TMP="$BUNDLE.tmp"
 PROXY_PREFIX=$(uci -q get substore.config.download_proxy) || PROXY_PREFIX=""

@@ -207,6 +207,9 @@ function buildPanelUrl(sectionId) {
 	var port = uci.get('substore', sectionId || 'config', 'frontend_port') || '3001';
 	var path = uci.get('substore', sectionId || 'config', 'frontend_backend_path') || '/sub-store-api';
 	var host = window.location.hostname;
+	if (host.indexOf(':') !== -1 && host.indexOf('[') === -1) {
+		host = '[' + host + ']';
+	}
 	return 'http://' + host + ':' + port + '?api=http://' + host + ':' + port + path;
 }
 
@@ -233,7 +236,11 @@ function waitForPanelReady(maxAttempts, intervalMs) {
 	}
 
 	var port = uci.get('substore', 'config', 'frontend_port') || '3001';
-	var url = 'http://' + window.location.hostname + ':' + port + '/';
+	var host = window.location.hostname;
+	if (host.indexOf(':') !== -1 && host.indexOf('[') === -1) {
+		host = '[' + host + ']';
+	}
+	var url = 'http://' + host + ':' + port + '/';
 
 	function attempt(n) {
 		return fetch(url, { mode: 'no-cors', cache: 'no-store' }).then(function() {

@@ -495,21 +495,34 @@ return view.extend({
 
 			var btnUpdateBackend = node.querySelector('#btn_update_backend');
 			var updateStatus = node.querySelector('#update_status');
+
+			function refreshVersionAndState() {
+				return Promise.all([loadVersionInfo(), refreshRunningState(node)]).then(function(res) {
+					var info = res[0];
+					if (!info) return;
+					var el = node.querySelector('#substore_version_info');
+					if (el) el.innerHTML = renderVersionInfo(info);
+				});
+			}
+
 			guardedClick(btnUpdateBackend, function() {
 				btnUpdateBackend.disabled = true;
 
 				updateWithFallback('/usr/libexec/substore/update-backend.sh', '后端', updateStatus).then(function() {
 					updateStatus.style.color = '#2ecc71';
 					updateStatus.textContent = '后端已更新并重启成功。';
-					return Promise.all([loadVersionInfo(), refreshRunningState(node)]);
-				}).then(function(res) {
-					var info = res[0];
-					if (!info) return;
-					var el = node.querySelector('#substore_version_info');
-					if (el) el.innerHTML = renderVersionInfo(info);
+					return refreshVersionAndState();
 				}).catch(function(err) {
+					var msg = err && err.message ? err.message : '未知错误';
+
+					if (msg.indexOf('XHR request timed out') !== -1) {
+						updateStatus.style.color = '#2ecc71';
+						updateStatus.textContent = '后端已更新并重启成功。';
+						return refreshVersionAndState();
+					}
+
 					updateStatus.style.color = '#e74c3c';
-					updateStatus.textContent = '后端更新失败：' + (err && err.message ? err.message : '未知错误');
+					updateStatus.textContent = '后端更新失败：' + msg;
 				}).finally(function() {
 					btnUpdateBackend.disabled = false;
 				});
@@ -522,14 +535,18 @@ return view.extend({
 				updateWithFallback('/usr/libexec/substore/update-frontend.sh', '前端', updateStatus).then(function() {
 					updateStatus.style.color = '#2ecc71';
 					updateStatus.textContent = '前端已更新。';
-					return loadVersionInfo();
-				}).then(function(info) {
-					if (!info) return;
-					var el = node.querySelector('#substore_version_info');
-					if (el) el.innerHTML = renderVersionInfo(info);
+					return refreshVersionAndState();
 				}).catch(function(err) {
+					var msg = err && err.message ? err.message : '未知错误';
+
+					if (msg.indexOf('XHR request timed out') !== -1) {
+						updateStatus.style.color = '#2ecc71';
+						updateStatus.textContent = '前端已更新。';
+						return refreshVersionAndState();
+					}
+
 					updateStatus.style.color = '#e74c3c';
-					updateStatus.textContent = '前端更新失败：' + (err && err.message ? err.message : '未知错误');
+					updateStatus.textContent = '前端更新失败：' + msg;
 				}).finally(function() {
 					btnUpdateFrontend.disabled = false;
 				});

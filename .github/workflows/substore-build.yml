@@ -208,7 +208,7 @@ jobs:
           [ -n "$FRONTEND_TAG" ] || FRONTEND_TAG="(查询失败)"
           {
             echo "body<<EOF"
-            echo "**本次更新到的 Sub-Store 上游版本**"
+            echo "**本次更新到 Sub-Store 上游版本**"
             echo "- 后端 (Sub-Store): \`$BACKEND_TAG\`"
             echo "- 前端 (Sub-Store-Front-End): \`$FRONTEND_TAG\`"
             echo "EOF"

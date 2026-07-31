@@ -4,7 +4,8 @@
 		"read": {
 			"uci": ["substore"],
 			"ubus": {
-				"service": ["list"]
+				"service": ["list"],
+				"file": ["read"]
 			},
 			"file": {
 				"/usr/libexec/substore/backend.version": ["read"],
@@ -14,7 +15,8 @@
 		"write": {
 			"uci": ["substore"],
 			"ubus": {
-				"rc": ["init"]
+				"rc": ["init"],
+				"file": ["exec"]
 			},
 			"file": {
 				"/usr/libexec/substore/update-backend.sh": ["exec"],

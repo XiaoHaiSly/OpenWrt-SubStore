@@ -17,7 +17,6 @@ ZIP_PATH=/tmp/dist.zip
 DIST_PATH=/www/sub-store/dist
 DIST_NEW_PATH=/www/sub-store/dist.new
 PROXY_PREFIX=$(uci -q get substore.config.download_proxy) || PROXY_PREFIX=""
-# 容错处理：去掉末尾可能存在的斜杠，再统一补一个，这样加速地址结尾加不加 / 都能正常拼接
 PROXY_PREFIX="${PROXY_PREFIX%/}"
 [ -n "$PROXY_PREFIX" ] && PROXY_PREFIX="$PROXY_PREFIX/"
 GITHUB_TOKEN=$(uci -q get substore.config.github_token) || GITHUB_TOKEN=""

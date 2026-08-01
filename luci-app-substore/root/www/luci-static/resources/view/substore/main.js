@@ -172,7 +172,7 @@ function buildSourceChain() {
 	var proxy = uci.get('substore', 'config', 'download_proxy');
 	if (proxy && proxy.trim() !== '') {
 		return [
-			{ source: 'proxy', name: '代理加速' },
+			{ source: 'proxy', name: '加速代理' },
 			{ source: 'official', name: '直连' }
 		];
 	}
@@ -187,17 +187,17 @@ function updateWithFallback(scriptPath, label, statusEl) {
 	function tryStep(i) {
 		var step = chain[i];
 		statusEl.style.color = '#666';
-		statusEl.textContent = '正在尝试' + step.name + '下载' + label + '...';
+		statusEl.textContent = '正在尝试' + step.name + '检测并更新' + label + '...';
 
 		return runSourceScript(scriptPath, step.source).then(function(r) {
 			if (r.ok) return r;
 			if (!r.retry) throw new Error(r.message);
 
 			var next = chain[i + 1];
-			if (!next) throw new Error(step.name + '下载失败：' + r.message);
+			if (!next) throw new Error(step.name + '更新失败：' + r.message);
 
 			statusEl.style.color = '#e67e22';
-			statusEl.textContent = step.name + '下载失败（' + r.message + '），正在改用' + next.name + '...';
+			statusEl.textContent = step.name + '更新失败（' + r.message + '），正在改用' + next.name + '...';
 
 			return tryStep(i + 1);
 		});

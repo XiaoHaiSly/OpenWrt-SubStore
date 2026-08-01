@@ -7,9 +7,9 @@ if [ "$SOURCE" != "proxy" ] && [ "$SOURCE" != "official" ]; then
 	exit 1
 fi
 
-NODE=$(command -v node) || NODE=""
 MV=$(command -v mv) || MV=""
 RM=$(command -v rm) || RM=""
+WGET=$(command -v wget) || WGET=""
 BUNDLE=/usr/libexec/substore/sub-store.bundle.js
 TMP="$BUNDLE.tmp"
 PROXY_PREFIX=$(uci -q get substore.config.download_proxy) || PROXY_PREFIX=""
@@ -22,8 +22,11 @@ GITHUB_API_URL="https://api.github.com/repos/sub-store-org/Sub-Store/releases/la
 PROXY_API_URL="$PROXY_PREFIX$GITHUB_API_URL"
 VERSION_FILE="/usr/libexec/substore/backend.version"
 
-if [ -z "$NODE" ]; then
-	echo "FAIL: node 命令未找到" >&2
+WGET_API_OPTS="--timeout=8 --tries=1"
+WGET_DL_OPTS="--timeout=15 --tries=2 --waitretry=3"
+
+if [ -z "$WGET" ]; then
+	echo "FAIL: wget-ssl 命令未找到" >&2
 	exit 1
 fi
 
@@ -40,97 +43,67 @@ esac
 CURRENT_VERSION=""
 [ -f "$VERSION_FILE" ] && CURRENT_VERSION=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\r\n')
 
-LATEST_TAG=$(GITHUB_TOKEN_ENV="$GITHUB_TOKEN" SOURCE_ENV="$SOURCE" PROXY_API_URL_ENV="$PROXY_API_URL" GITHUB_API_URL_ENV="$GITHUB_API_URL" "$NODE" -e "
-function looksLikeVersionTag(s) {
-  if (!s) return false;
-  var t = String(s).trim();
-  if (!t || t.length > 40) return false;
-  if (/[<>\r\n\s]/.test(t)) return false;
-  return /^[A-Za-z0-9._+-]+\$/.test(t);
+# 校验 tag 是否形如合法版本号（长度、字符集限制），避免把异常/垃圾内容当版本号写入
+looks_like_version_tag() {
+	t="$1"
+	[ -z "$t" ] && return 1
+	[ "${#t}" -gt 40 ] && return 1
+	printf '%s' "$t" | grep -Eq '^[A-Za-z0-9._+-]+$' || return 1
+	return 0
 }
 
-var token = process.env.GITHUB_TOKEN_ENV || '';
-var authHeaders = token ? { 'Authorization': 'token ' + token } : {};
-var source = process.env.SOURCE_ENV || 'official';
-var proxyApiUrl = process.env.PROXY_API_URL_ENV || '';
-var githubApiUrl = process.env.GITHUB_API_URL_ENV || '';
-
-async function fromProxyApi() {
-  try {
-    const res = await fetch(proxyApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
-    if (!res.ok) return null;
-    const data = await res.json();
-    var tag = data && data.tag_name;
-    return looksLikeVersionTag(tag) ? tag : null;
-  } catch (e) {
-    return null;
-  }
+# 通过 wget-ssl 请求 GitHub Release API 并提取 tag_name 字段
+fetch_tag_api() {
+	api_url="$1"
+	[ -z "$api_url" ] && return 1
+	auth_header=""
+	[ -n "$GITHUB_TOKEN" ] && auth_header="--header=Authorization: token $GITHUB_TOKEN"
+	"$WGET" $WGET_API_OPTS $auth_header -qO- "$api_url" 2>/dev/null \
+		| sed -n 's/.*"tag_name" *: *"\([^"]*\)".*/\1/p' | head -n1
 }
 
-async function fromDirectApi() {
-  try {
-    const res = await fetch(githubApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
-    if (!res.ok) return null;
-    const data = await res.json();
-    var tag = data && data.tag_name;
-    return looksLikeVersionTag(tag) ? tag : null;
-  } catch (e) {
-    return null;
-  }
+# 按 SOURCE 决定优先查询顺序（proxy 源优先查代理 API，official 源优先查直连 API），
+# 任一查询失败自动尝试另一个，尽量拿到准确版本号
+get_latest_tag() {
+	if [ "$SOURCE" = "proxy" ]; then
+		first_api="$PROXY_API_URL"; second_api="$GITHUB_API_URL"
+	else
+		first_api="$GITHUB_API_URL"; second_api="$PROXY_API_URL"
+	fi
+	for api_url in "$first_api" "$second_api"; do
+		[ -z "$api_url" ] && continue
+		tag=$(fetch_tag_api "$api_url")
+		if looks_like_version_tag "$tag"; then
+			echo "$tag"
+			return 0
+		fi
+	done
+	return 1
 }
 
-var ORDER = {
-  proxy:    [fromProxyApi, fromDirectApi],
-  official: [fromDirectApi, fromProxyApi]
-};
-
-(async () => {
-  var fns = ORDER[source] || ORDER.official;
-  var tag = null;
-  for (var i = 0; i < fns.length; i++) {
-    tag = await fns[i]();
-    if (tag) break;
-  }
-  if (tag) console.log(tag);
-})();
-" 2>/dev/null | tr -d '\r\n')
+LATEST_TAG=$(get_latest_tag || true)
 
 if [ -n "$LATEST_TAG" ] && [ -n "$CURRENT_VERSION" ] && [ "$LATEST_TAG" = "$CURRENT_VERSION" ]; then
 	echo "ALREADY_LATEST:$LATEST_TAG"
 	exit 0
 fi
 
-DL_OUTPUT=$(SUBSTORE_URL_ENV="$URL" "$NODE" -e "
-const fs = require('fs');
-const { pipeline } = require('stream/promises');
-const { Readable } = require('stream');
-
-var url = process.env.SUBSTORE_URL_ENV || '';
-
-async function download(url) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  await pipeline(Readable.fromWeb(res.body), fs.createWriteStream('$TMP'));
-  const head = fs.readFileSync('$TMP', { encoding: 'utf8', flag: 'r' }).slice(0, 200);
-  if (/<html|<!DOCTYPE/i.test(head)) {
-    throw new Error('返回内容像是 HTML 错误页，不是 js bundle');
-  }
-}
-
-download(url).catch(function(e) {
-  console.log('DOWNLOAD_FAILED: ' + (e && e.message || e));
-});
-")
-
-if [ -n "$DL_OUTPUT" ]; then
+"$RM" -f "$TMP"
+if ! "$WGET" $WGET_DL_OPTS -q -O "$TMP" "$URL"; then
 	"$RM" -f "$TMP"
-	echo "$DL_OUTPUT"
+	echo "DOWNLOAD_FAILED: 下载失败（wget 请求出错，可能是网络问题或地址不可达）"
 	exit 0
 fi
 
 if [ ! -s "$TMP" ]; then
 	"$RM" -f "$TMP"
 	echo "DOWNLOAD_FAILED: 下载后文件为空"
+	exit 0
+fi
+
+if head -c 200 "$TMP" | grep -qi '<html\|<!DOCTYPE'; then
+	"$RM" -f "$TMP"
+	echo "DOWNLOAD_FAILED: 返回内容像是 HTML 错误页，不是 js bundle"
 	exit 0
 fi
 
@@ -148,69 +121,12 @@ fi
 if [ -n "$LATEST_TAG" ]; then
 	printf '%s' "$LATEST_TAG" > "$VERSION_FILE"
 else
-GITHUB_TOKEN_ENV="$GITHUB_TOKEN" SOURCE_ENV="$SOURCE" PROXY_API_URL_ENV="$PROXY_API_URL" GITHUB_API_URL_ENV="$GITHUB_API_URL" "$NODE" -e "
-const fs = require('fs');
-
-function looksLikeVersionTag(s) {
-  if (!s) return false;
-  var t = String(s).trim();
-  if (!t || t.length > 40) return false;
-  if (/[<>\r\n\s]/.test(t)) return false;
-  return /^[A-Za-z0-9._+-]+\$/.test(t);
-}
-
-var token = process.env.GITHUB_TOKEN_ENV || '';
-var authHeaders = token ? { 'Authorization': 'token ' + token } : {};
-var source = process.env.SOURCE_ENV || 'official';
-var proxyApiUrl = process.env.PROXY_API_URL_ENV || '';
-var githubApiUrl = process.env.GITHUB_API_URL_ENV || '';
-
-async function fromProxyApi() {
-  try {
-    const res = await fetch(proxyApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
-    if (!res.ok) return null;
-    const data = await res.json();
-    var tag = data && data.tag_name;
-    return looksLikeVersionTag(tag) ? tag : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-async function fromDirectApi() {
-  try {
-    const res = await fetch(githubApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
-    if (!res.ok) return null;
-    const data = await res.json();
-    var tag = data && data.tag_name;
-    return looksLikeVersionTag(tag) ? tag : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-var ORDER = {
-  proxy:    [fromProxyApi, fromDirectApi],
-  official: [fromDirectApi, fromProxyApi]
-};
-
-(async () => {
-  var fns = ORDER[source] || ORDER.official;
-  var tag = null;
-  for (var i = 0; i < fns.length; i++) {
-    tag = await fns[i]();
-    if (tag) break;
-  }
-
-  if (tag) {
-    fs.writeFileSync('$VERSION_FILE', tag);
-  } else {
-    console.error('本次没能确定版本号，保留原有记录');
-  }
-})().catch(function(e) {
-  console.error('版本号查询流程异常（不影响本次更新结果）：' + (e && e.message || e));
-});
-" || true
+	FINAL_TAG=$(get_latest_tag || true)
+	if [ -n "$FINAL_TAG" ]; then
+		printf '%s' "$FINAL_TAG" > "$VERSION_FILE"
+	else
+		echo "本次没能确定版本号，保留原有记录" >&2
+	fi
 fi
 
 echo "OK"

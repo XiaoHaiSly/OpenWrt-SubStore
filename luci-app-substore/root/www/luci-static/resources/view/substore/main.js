@@ -158,6 +158,9 @@ function runSourceScript(scriptPath, source) {
 		if (code === 0 && stdout === 'OK') {
 			return { ok: true };
 		}
+		if (code === 0 && stdout.indexOf('ALREADY_LATEST:') === 0) {
+			return { ok: true, alreadyLatest: true, version: stdout.slice('ALREADY_LATEST:'.length).trim() };
+		}
 		if (code === 0 && stdout.indexOf('DOWNLOAD_FAILED:') === 0) {
 			return { ok: false, retry: true, message: stdout.slice('DOWNLOAD_FAILED:'.length).trim() };
 		}
@@ -497,7 +500,11 @@ return view.extend({
 			var updateStatus = node.querySelector('#update_status');
 
 			function refreshVersionAndState() {
-				return Promise.all([loadVersionInfo(), refreshRunningState(node)]).then(function(res) {
+				return new Promise(function(resolve) {
+					setTimeout(resolve, 500);
+				}).then(function() {
+					return Promise.all([loadVersionInfo(), refreshRunningState(node)]);
+				}).then(function(res) {
 					var info = res[0];
 					if (!info) return;
 					var el = node.querySelector('#substore_version_info');
@@ -508,9 +515,11 @@ return view.extend({
 			guardedClick(btnUpdateBackend, function() {
 				btnUpdateBackend.disabled = true;
 
-				updateWithFallback('/usr/libexec/substore/update-backend.sh', '后端', updateStatus).then(function() {
+				updateWithFallback('/usr/libexec/substore/update-backend.sh', '后端', updateStatus).then(function(r) {
 					updateStatus.style.color = '#2ecc71';
-					updateStatus.textContent = '后端已更新并重启成功。';
+					updateStatus.textContent = (r && r.alreadyLatest) ?
+						('当前已是最新版本（' + r.version + '），无需更新。') :
+						'后端已更新并重启成功。';
 					return refreshVersionAndState();
 				}).catch(function(err) {
 					var msg = err && err.message ? err.message : '未知错误';
@@ -532,9 +541,11 @@ return view.extend({
 			guardedClick(btnUpdateFrontend, function() {
 				btnUpdateFrontend.disabled = true;
 
-				updateWithFallback('/usr/libexec/substore/update-frontend.sh', '前端', updateStatus).then(function() {
+				updateWithFallback('/usr/libexec/substore/update-frontend.sh', '前端', updateStatus).then(function(r) {
 					updateStatus.style.color = '#2ecc71';
-					updateStatus.textContent = '前端已更新。';
+					updateStatus.textContent = (r && r.alreadyLatest) ?
+						('当前已是最新版本（' + r.version + '），无需更新。') :
+						'前端已更新。';
 					return refreshVersionAndState();
 				}).catch(function(err) {
 					var msg = err && err.message ? err.message : '未知错误';

@@ -172,7 +172,7 @@ function buildSourceChain() {
 	var proxy = uci.get('substore', 'config', 'download_proxy');
 	if (proxy && proxy.trim() !== '') {
 		return [
-			{ source: 'proxy', name: '加速代理' },
+			{ source: 'proxy', name: '代理加速' },
 			{ source: 'official', name: '直连' }
 		];
 	}
@@ -518,7 +518,7 @@ return view.extend({
 				updateWithFallback('/usr/libexec/substore/update-backend.sh', '后端', updateStatus).then(function(r) {
 					updateStatus.style.color = '#2ecc71';
 					updateStatus.textContent = (r && r.alreadyLatest) ?
-						('当前已是最新版本（' + r.version + '），无需更新。') :
+						('当前已是最新版本' + r.version + '，无需更新') :
 						'后端已更新并重启成功。';
 					return refreshVersionAndState();
 				}).catch(function(err) {
@@ -544,7 +544,7 @@ return view.extend({
 				updateWithFallback('/usr/libexec/substore/update-frontend.sh', '前端', updateStatus).then(function(r) {
 					updateStatus.style.color = '#2ecc71';
 					updateStatus.textContent = (r && r.alreadyLatest) ?
-						('当前已是最新版本（' + r.version + '），无需更新。') :
+						('当前已是最新版本' + r.version + '，无需更新') :
 						'前端已更新。';
 					return refreshVersionAndState();
 				}).catch(function(err) {

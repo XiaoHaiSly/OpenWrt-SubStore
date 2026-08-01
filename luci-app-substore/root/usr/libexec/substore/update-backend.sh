@@ -43,7 +43,6 @@ esac
 CURRENT_VERSION=""
 [ -f "$VERSION_FILE" ] && CURRENT_VERSION=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\r\n')
 
-# 校验 tag 是否形如合法版本号（长度、字符集限制），避免把异常/垃圾内容当版本号写入
 looks_like_version_tag() {
 	t="$1"
 	[ -z "$t" ] && return 1
@@ -52,7 +51,6 @@ looks_like_version_tag() {
 	return 0
 }
 
-# 通过 wget-ssl 请求 GitHub Release API 并提取 tag_name 字段
 fetch_tag_api() {
 	api_url="$1"
 	[ -z "$api_url" ] && return 1
@@ -62,8 +60,6 @@ fetch_tag_api() {
 		| sed -n 's/.*"tag_name" *: *"\([^"]*\)".*/\1/p' | head -n1
 }
 
-# 按 SOURCE 决定优先查询顺序（proxy 源优先查代理 API，official 源优先查直连 API），
-# 任一查询失败自动尝试另一个，尽量拿到准确版本号
 get_latest_tag() {
 	if [ "$SOURCE" = "proxy" ]; then
 		first_api="$PROXY_API_URL"; second_api="$GITHUB_API_URL"
@@ -91,7 +87,7 @@ fi
 "$RM" -f "$TMP"
 if ! "$WGET" $WGET_DL_OPTS -q -O "$TMP" "$URL"; then
 	"$RM" -f "$TMP"
-	echo "DOWNLOAD_FAILED: 下载失败（wget 请求出错，可能是网络问题或地址不可达）"
+	echo "DOWNLOAD_FAILED: 下载失败（请求出错，可能是网络问题或地址不可达）"
 	exit 0
 fi
 

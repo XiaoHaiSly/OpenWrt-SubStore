@@ -41,6 +41,69 @@ case "$SOURCE" in
 	official) URL="$OFFICIAL_URL" ;;
 esac
 
+CURRENT_VERSION=""
+[ -f "$VERSION_FILE" ] && CURRENT_VERSION=$(cat "$VERSION_FILE" 2>/dev/null | tr -d '\r\n')
+
+LATEST_TAG=$(GITHUB_TOKEN_ENV="$GITHUB_TOKEN" SOURCE_ENV="$SOURCE" PROXY_API_URL_ENV="$PROXY_API_URL" GITHUB_API_URL_ENV="$GITHUB_API_URL" "$NODE" -e "
+function looksLikeVersionTag(s) {
+  if (!s) return false;
+  var t = String(s).trim();
+  if (!t || t.length > 40) return false;
+  if (/[<>\r\n\s]/.test(t)) return false;
+  return /^[A-Za-z0-9._+-]+\$/.test(t);
+}
+
+var token = process.env.GITHUB_TOKEN_ENV || '';
+var authHeaders = token ? { 'Authorization': 'token ' + token } : {};
+var source = process.env.SOURCE_ENV || 'official';
+var proxyApiUrl = process.env.PROXY_API_URL_ENV || '';
+var githubApiUrl = process.env.GITHUB_API_URL_ENV || '';
+
+async function fromProxyApi() {
+  try {
+    const res = await fetch(proxyApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
+    if (!res.ok) return null;
+    const data = await res.json();
+    var tag = data && data.tag_name;
+    return looksLikeVersionTag(tag) ? tag : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fromDirectApi() {
+  try {
+    const res = await fetch(githubApiUrl, { signal: AbortSignal.timeout(8000), headers: authHeaders });
+    if (!res.ok) return null;
+    const data = await res.json();
+    var tag = data && data.tag_name;
+    return looksLikeVersionTag(tag) ? tag : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+var ORDER = {
+  proxy:    [fromProxyApi, fromDirectApi],
+  official: [fromDirectApi, fromProxyApi]
+};
+
+(async () => {
+  var fns = ORDER[source] || ORDER.official;
+  var tag = null;
+  for (var i = 0; i < fns.length; i++) {
+    tag = await fns[i]();
+    if (tag) break;
+  }
+  if (tag) console.log(tag);
+})();
+" 2>/dev/null | tr -d '\r\n')
+
+if [ -n "$LATEST_TAG" ] && [ -n "$CURRENT_VERSION" ] && [ "$LATEST_TAG" = "$CURRENT_VERSION" ]; then
+	echo "ALREADY_LATEST:$LATEST_TAG"
+	exit 0
+fi
+
 DL_OUTPUT=$(SUBSTORE_URL_ENV="$URL" "$NODE" -e "
 const fs = require('fs');
 const { pipeline } = require('stream/promises');
@@ -100,6 +163,9 @@ if [ ! -f "$DIST_PATH/index.html" ]; then
 	exit 1
 fi
 
+if [ -n "$LATEST_TAG" ]; then
+	printf '%s' "$LATEST_TAG" > "$VERSION_FILE"
+else
 GITHUB_TOKEN_ENV="$GITHUB_TOKEN" SOURCE_ENV="$SOURCE" PROXY_API_URL_ENV="$PROXY_API_URL" GITHUB_API_URL_ENV="$GITHUB_API_URL" "$NODE" -e "
 const fs = require('fs');
 
@@ -163,6 +229,7 @@ var ORDER = {
   console.error('版本号查询流程异常（不影响本次更新结果）：' + (e && e.message || e));
 });
 " || true
+fi
 
 echo "OK"
 exit 0

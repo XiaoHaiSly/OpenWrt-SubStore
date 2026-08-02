@@ -183,17 +183,17 @@ function buildAttemptChain() {
 	return chain;
 }
 
+function describe(step) {
+	return step.methodName + '·' + step.sourceName;
+}
+
 function updateWithFallback(scriptPath, label, statusEl) {
 	var chain = buildAttemptChain();
-
-	function describe(step) {
-		return step.sourceName + '·' + step.methodName;
-	}
 
 	function tryStep(i) {
 		var step = chain[i];
 		statusEl.style.color = '#666';
-		statusEl.textContent = '正在通过' + describe(step) + '检测并更新' + label + '...';
+		statusEl.textContent = step.methodName + ' 正在通过' + step.sourceName + '检测并更新' + label + '...';
 
 		return runAttempt(scriptPath, step).then(function(r) {
 			if (r.ok) return r;

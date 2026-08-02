@@ -183,12 +183,12 @@ function buildAttemptChain() {
 	return chain;
 }
 
-function describe(step) {
-	return step.methodName + '·' + step.sourceName;
-}
-
 function updateWithFallback(scriptPath, label, statusEl) {
 	var chain = buildAttemptChain();
+
+	function describe(step) {
+		return step.methodName + '·' + step.sourceName;
+	}
 
 	function tryStep(i) {
 		var step = chain[i];
@@ -199,9 +199,6 @@ function updateWithFallback(scriptPath, label, statusEl) {
 			if (r.ok) return r;
 			throw new Error(r.message);
 		}).catch(function(err) {
-			// 这里同时接住两种情况：脚本正常返回了"失败"结果（上面手动 throw 出来的），
-			// 以及请求本身直接超时/中断被 reject 的情况。两者都当作这一步失败，
-			// 统一尝试链条中的下一步，而不是让异常直接穿透到外层。
 			var msg = err && err.message ? err.message : '未知错误';
 			var next = chain[i + 1];
 			if (!next) throw new Error(describe(step) + '更新失败：' + msg);
@@ -328,9 +325,6 @@ function guardedClick(btn, action, exclusive) {
 			return;
 		}
 
-		// exclusive 仅用于 重启/更新后端/更新前端 这三个互斥操作：
-		// 如果其中一个正在跑，另一个被点击时只转一下圈作为反馈，不会真正执行，
-		// 不会禁用任何按钮。打开面板不参与这把锁，任何时候都能点。
 		if (exclusive) {
 			if (actionLock.busy) {
 				spinNoop(btn);
@@ -338,7 +332,6 @@ function guardedClick(btn, action, exclusive) {
 			}
 			actionLock.busy = true;
 			Promise.resolve().then(action).catch(function() {
-				// action 内部各自已有 catch/finally 处理自身的错误展示，这里只是兜底防止未处理的 rejection。
 			}).finally(function() {
 				actionLock.busy = false;
 			});

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: "强制执行（勾选后跳过版本比对，强制触发）"
+        description: "强制执行"
         type: boolean
         default: false
 

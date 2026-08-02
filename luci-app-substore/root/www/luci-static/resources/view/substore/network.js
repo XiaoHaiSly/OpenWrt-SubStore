@@ -56,6 +56,12 @@ return view.extend({
 			return validateProxy(value);
 		};
 
+		o = s.option(form.ListValue, 'download_method', _('更新下载方式'), _('点击"更新前端/后端"时使用的下载方式'));
+		o.value('node', _('node-fetch'));
+		o.value('wget', _('wget-ssl'));
+		o.default = 'node';
+		o.rmempty = false;
+
 		o = s.option(form.Value, 'download_proxy', _('更新加速代理'), _('点击"更新前端/后端"时，用于加速下载资源的反代地址前缀。留空则直连 GitHub'));
 		o.placeholder = 'https://ghfast.top/';
 		o.validate = function(section_id, value) {

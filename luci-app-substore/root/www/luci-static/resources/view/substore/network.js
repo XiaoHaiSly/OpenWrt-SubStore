@@ -56,7 +56,7 @@ return view.extend({
 			return validateProxy(value);
 		};
 
-		o = s.option(form.ListValue, 'download_method', _('更新下载方式'), _('点击"更新前端/后端"时使用的下载方式'));
+		o = s.option(form.ListValue, 'download_method', _('更新方式'), _('点击"更新前端/后端"时使用的下载方式'));
 		o.value('node', _('node-fetch'));
 		o.value('wget', _('wget-ssl'));
 		o.default = 'node';

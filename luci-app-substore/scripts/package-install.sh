@@ -20,6 +20,10 @@ install -d "$DEST/usr/libexec/substore"
 install -m0755 "$SRC/root/usr/libexec/substore/postinstall.sh" "$DEST/usr/libexec/substore/postinstall.sh"
 install -m0755 "$SRC/root/usr/libexec/substore/update-backend.sh" "$DEST/usr/libexec/substore/update-backend.sh"
 install -m0755 "$SRC/root/usr/libexec/substore/update-frontend.sh" "$DEST/usr/libexec/substore/update-frontend.sh"
+install -m0755 "$SRC/root/usr/libexec/substore/node-fetch-update-backend.sh" "$DEST/usr/libexec/substore/node-fetch-update-backend.sh"
+install -m0755 "$SRC/root/usr/libexec/substore/node-fetch-update-frontend.sh" "$DEST/usr/libexec/substore/node-fetch-update-frontend.sh"
+install -m0755 "$SRC/root/usr/libexec/substore/wget-ssl-update-backend.sh" "$DEST/usr/libexec/substore/wget-ssl-update-backend.sh"
+install -m0755 "$SRC/root/usr/libexec/substore/wget-ssl-update-frontend.sh" "$DEST/usr/libexec/substore/wget-ssl-update-frontend.sh"
 
 install -d "$DEST/usr/share/luci/menu.d"
 install -m0644 "$SRC/root/usr/share/luci/menu.d/luci-app-substore.json" "$DEST/usr/share/luci/menu.d/luci-app-substore.json"
@@ -28,7 +32,7 @@ install -d "$DEST/usr/share/rpcd/acl.d"
 install -m0644 "$SRC/root/usr/share/rpcd/acl.d/luci-app-substore.json" "$DEST/usr/share/rpcd/acl.d/luci-app-substore.json"
 
 install -d "$DEST/www/luci-static/resources/view/substore"
-for f in main.js advanced.js network.js cron.js; do
+for f in main.js advanced.js network.js cron.js icon-running.png icon-stopped.png; do
 	install -m0644 "$SRC/root/www/luci-static/resources/view/substore/$f" \
 		"$DEST/www/luci-static/resources/view/substore/$f"
 done

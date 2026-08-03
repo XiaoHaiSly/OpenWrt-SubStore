@@ -97,7 +97,7 @@ jobs:
 
       - name: Copy IPK public key
         run: |
-          cp keys/ipk-sign.pub site/substore-ipk.pub
+          cp scripts/ipk-sign.pub site/substore-ipk.pub
 
       - name: Mirror Sub-Store backend/frontend assets
         env:

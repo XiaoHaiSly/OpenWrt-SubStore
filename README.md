@@ -20,7 +20,7 @@
 | 项目 | 要求 |
 |---|---|
 | OpenWrt 版本 |依赖新版 LuCI JS 前端框架 `ui.js`/`view.extend`|
-| 多构架支持 | LuCI 部分为纯 Lua/JS（arch:all），后端依赖 Node.js，跟随 OpenWrt 官方 node 软件包支持的架构范围 |
+| 构架支持 | LuCI 部分为纯 Lua/JS（arch:all），后端依赖 Node.js，跟随 OpenWrt 官方 node 软件包支持的架构范围 |
 | 依赖软件包 | `node`、`unzip` |
 | 存储空间 | 建议预留 40MB 以上可用空间（node 运行时 + 后端 bundle + 前端静态资源） |
 | 内存 | 256MB 及以上机型可正常运行，跑大量订阅/规则集时建议 512MB 以上 |

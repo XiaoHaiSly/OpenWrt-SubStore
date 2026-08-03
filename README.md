@@ -85,7 +85,7 @@ apk add luci-app-substore
 
 ### 方式三：LuCI 网页手动上传 ipk/apk
 
-在 [substore-openwrt.pages.dev](https://substore-openwrt.pages.dev/) 对应架构目录下载 ipk/apk 文件，LuCI → 系统 → 软件包 → 上传安装。
+在 Releases 下载 ipk/apk 文件，LuCI → 系统 → 软件包 → 上传安装。
 
 ---
 

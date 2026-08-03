@@ -59,7 +59,7 @@ SSH 登录路由器执行：
 wget -O - https://github.com/XiaoHaiSly/OpenWrt-SubStore/raw/refs/heads/main/scripts/install.sh | ash
 ```
 
-脚本会自动判断路由器用的是 `opkg` 还是 `apk`，导入签名公钥、添加对应软件源、安装 `luci-app-substore`。
+
 
 ### 方式二：手动添加软件源
 

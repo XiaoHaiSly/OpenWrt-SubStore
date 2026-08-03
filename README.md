@@ -10,7 +10,7 @@
 </div>
 
 <p align="center" color="#6a737d">
-在 OpenWrt 路由器上一键安装 <a href="https://github.com/sub-store-org/Sub-Store">Sub-Store</a> 订阅管理后端，并提供完整的 LuCI 图形化管理界面——启动/停止、版本查看、一键更新、定时任务、数据备份恢复等。
+在 OpenWrt 上一键安装 <a href="https://github.com/sub-store-org/Sub-Store">Sub-Store</a> 
 </p>
 
 ---

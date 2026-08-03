@@ -68,7 +68,7 @@ return view.extend({
 			return validateDownloadProxy(value);
 		};
 
-		o = s.option(form.Value, 'github_token', _('GitHub 令牌'), _('查询版本号时携带此令牌请求 GitHub API，留空则匿名请求。'));
+		o = s.option(form.Value, 'github_token', _('GitHub 令牌'), _('查询版本号时携带此令牌请求 GitHub API，留空则匿名请求'));
 		o.password = true;
 		o.placeholder = '';
 

@@ -41,11 +41,11 @@
 
 | 项目 | 要求 |
 |---|---|
-| OpenWrt 版本 |依赖新版 LuCI JS 前端框架 `ui.js`/`view.extend`，**不支持纯 Lua 老版 LuCI** |
-| 包管理器 | `opkg`（OpenWrt 24.10 及更早）或 `apk`（OpenWrt 25.12 及以后），二选一，安装脚本会自动识别 |
-| 依赖软件包 | `node`（运行 Sub-Store 后端）、`unzip`（解压前端静态文件），装包时 opkg/apk 会自动一并装上 |
-| 存储空间 | 建议预留 30MB 以上可用空间（node 运行时 + 后端 bundle + 前端静态资源） |
-| 内存 | 128MB 及以上机型可正常运行，跑大量订阅/规则集时建议 256MB 以上 |
+| OpenWrt 版本 |依赖新版 LuCI JS 前端框架 `ui.js`/`view.extend`|
+| 包管理器 | `opkg`（OpenWrt 24.10 及更早）或 `apk`（OpenWrt 25.12 及以后） |
+| 依赖软件包 | `node`、`unzip` |
+| 存储空间 | 建议预留 40MB 以上可用空间（node 运行时 + 后端 bundle + 前端静态资源） |
+| 内存 | 256MB 及以上机型可正常运行，跑大量订阅/规则集时建议 512MB 以上 |
 
 ---
 

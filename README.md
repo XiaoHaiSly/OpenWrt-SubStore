@@ -10,7 +10,7 @@
 </div>
 
 <p align="center" color="#6a737d">
-在 OpenWrt 上一键安装 <a href="https://github.com/sub-store-org/Sub-Store">Sub-Store</a> 
+在 OpenWrt 上一键安装 <a href="https://github.com/sub-store-org/Sub-Store">Sub-Store</a> Advanced Subscription Manager for QX, Loon, Surge, Stash, Egern and Shadowrocket.
 </p>
 
 ---

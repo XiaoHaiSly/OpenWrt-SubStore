@@ -4,13 +4,13 @@
 'require uci';
 
 function validateCronField(val, min, max, fieldName) {
-	if (val === '*') return true;
+	if (val === '' || val === '*') return true;
 	if (/[\/\-\,\*]/.test(val)) return true;
 	var n = parseInt(val, 10);
 	if (isNaN(n)) {
 		return _('%s 字段包含非法字符').format(fieldName);
 	}
-	if (n < min || n > max) {
+	if (n > max) {
 		return _('%s 字段范围为 %d-%d，当前值 %d 无效').format(fieldName, min, max, n);
 	}
 	return true;
@@ -18,10 +18,19 @@ function validateCronField(val, min, max, fieldName) {
 
 function validateCron(value) {
 	if (!value || value.trim() === '') return true;
-	var parts = value.trim().split(/\s+/);
-	if (parts.length !== 5) {
+	var v = value.trim();
+
+	if (!/^[0-9\s*\/,\-]*$/.test(v)) {
+		return _('请输入有效的 cron 表达式');
+	}
+
+	var parts = v.split(/\s+/);
+
+	if (parts.length > 5) {
 		return _('请输入有效的 cron 表达式（5个字段），例如：55 23 * * *');
 	}
+	if (parts.length < 5) return true;
+
 	var fields = [
 		{ name: '分钟', min: 0, max: 59 },
 		{ name: '小时', min: 0, max: 23 },
@@ -43,22 +52,23 @@ function validateProduceCron(value) {
 		var entry = entries[i].trim();
 		if (!entry) continue;
 		var parts = entry.split(',');
-		if (parts.length < 3) {
-			return _('第 %d 项格式错误，应为：cron表达式,类型,名称').format(i + 1);
-		}
-		var cronPart = parts[0].trim();
-		var typePart = parts[1].trim();
-		var namePart = parts[2].trim();
 
+		var cronPart = parts[0] !== undefined ? parts[0].trim() : '';
 		var cronResult = validateCron(cronPart);
 		if (cronResult !== true) {
 			return _('第 %d 项 cron 表达式有误：%s').format(i + 1, cronResult);
 		}
-		if (typePart !== 'sub' && typePart !== 'col') {
-			return _('第 %d 项类型必须为 sub 或 col，当前为：%s').format(i + 1, typePart);
+
+		if (parts.length >= 2) {
+			var typePart = parts[1].trim();
+			if (typePart !== '' && typePart !== 'sub' && typePart !== 'col' &&
+			    'sub'.indexOf(typePart) !== 0 && 'col'.indexOf(typePart) !== 0) {
+				return _('第 %d 项类型必须为 sub 或 col，当前为：%s').format(i + 1, typePart);
+			}
 		}
-		if (!namePart) {
-			return _('第 %d 项名称不能为空').format(i + 1);
+
+		if (parts.length > 3) {
+			return _('第 %d 项格式错误，字段过多，应为：cron表达式,类型,名称').format(i + 1);
 		}
 	}
 	return true;

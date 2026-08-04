@@ -3,27 +3,44 @@
 'require form';
 'require uci';
 
+function isPossiblePrefix(v, candidates) {
+	for (var i = 0; i < candidates.length; i++) {
+		if (candidates[i].indexOf(v) === 0) return true;
+	}
+	return false;
+}
+
 function validateHost(value) {
 	if (!value || value.trim() === '') return true;
 	var v = value.trim();
+	var candidates = ['::', '0.0.0.0', '127.0.0.1'];
 
-	if (v === '::' || v === '0.0.0.0' || v === '127.0.0.1') return true;
+	if (candidates.indexOf(v) !== -1) return true;
+	if (isPossiblePrefix(v, candidates)) return true;
 
-	return _('监听地址只能是 ::（IPv4+IPv6）、0.0.0.0（仅IPv4）');
+	return _('请输入有效的监听地址');
 }
 
 function validateProxy(value) {
 	if (!value || value.trim() === '') return true;
 	var v = value.trim();
+	var schemes = ['http://', 'https://', 'socks5://'];
+
 	if (/^(http|https|socks5):\/\/.+/.test(v)) return true;
-	return _('代理地址必须以 http://、https:// 或 socks5:// 开头');
+	if (isPossiblePrefix(v, schemes)) return true;
+
+	return _('输入有效的代理');
 }
 
 function validateDownloadProxy(value) {
 	if (!value || value.trim() === '') return true;
 	var v = value.trim();
+	var schemes = ['http://', 'https://'];
+
 	if (/^https?:\/\/.+/.test(v)) return true;
-	return _('加速代理地址必须以 http:// 或 https:// 开头');
+	if (isPossiblePrefix(v, schemes)) return true;
+
+	return _('请输入有效的加速代理');
 }
 
 return view.extend({

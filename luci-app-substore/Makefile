@@ -4,7 +4,7 @@ LUCI_TITLE:=LuCI support for Sub-Store (Subscription Manager)
 LUCI_DEPENDS:=+node +unzip +wget-ssl
 
 PKG_NAME:=luci-app-substore
-PKG_VERSION:=2026.08.10
+PKG_VERSION:=2026.08.11
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0
 PKG_MAINTAINER:=xiaohai

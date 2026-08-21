@@ -7,7 +7,7 @@ PKG_NAME:=luci-app-substore
 PKG_VERSION:=2026.08.21
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0
-PKG_MAINTAINER:=xiaohai
+PKG_MAINTAINER:=xiaohaisly
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
